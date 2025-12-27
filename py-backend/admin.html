@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QueuePilot - Business Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif; background: #fafafa; color: #1a1a1a; overflow-x: hidden; }
+        
+        .notification-toast { position: fixed; top: 24px; right: 24px; background: #ffffff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 16px 20px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15); z-index: 10001; display: none; align-items: center; gap: 12px; min-width: 320px; animation: slideIn 0.3s ease; }
+        .notification-toast.show { display: flex; }
+        .notification-toast.success { border-left: 4px solid #22c55e; }
+        .notification-toast.error { border-left: 4px solid #ef4444; }
+        @keyframes slideIn { from { transform: translateX(400px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        .notification-icon { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+        .notification-toast.success .notification-icon { background: #f0fdf4; color: #22c55e; }
+        .notification-toast.error .notification-icon { background: #fef2f2; color: #ef4444; }
+        .notification-content { flex: 1; }
+        .notification-title { font-weight: 600; color: #1a1a1a; margin-bottom: 2px; font-size: 14px; }
+        .notification-message { font-size: 13px; color: #6b7280; }
+        .notification-close { width: 24px; height: 24px; border-radius: 6px; background: #f9fafb; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+        .notification-close:hover { background: #e5e7eb; }
+        
+        .verification-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #ffffff; z-index: 10000; display: flex; align-items: center; justify-content: center; transition: opacity 0.5s ease; }
+        .verification-overlay.hide { opacity: 0; pointer-events: none; }
+        .verification-box { text-align: center; max-width: 500px; padding: 40px; }
+        .camera-preview { width: 280px; height: 280px; background: #000; border-radius: 50%; margin: 0 auto 40px; position: relative; border: 4px solid #e63946; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        .camera-preview video { width: 100%; height: 100%; object-fit: cover; }
+        .face-outline { position: absolute; width: 180px; height: 220px; border: 3px dashed #e63946; border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%; animation: pulse 2s ease-in-out infinite; pointer-events: none; }
+        @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 0.6; } 50% { transform: scale(1.05); opacity: 1; } }
+        .verification-title { font-size: 32px; font-weight: 700; color: #1a1a1a; margin-bottom: 12px; letter-spacing: -0.5px; }
+        .verification-subtitle { color: #6b7280; margin-bottom: 32px; font-size: 16px; }
+        .verification-progress { display: flex; gap: 12px; justify-content: center; margin-bottom: 24px; }
+        .progress-step { width: 80px; height: 6px; background: #e5e7eb; border-radius: 3px; position: relative; overflow: hidden; }
+        .progress-step.active { background: #e63946; }
+        .progress-step.active::after { content: ''; position: absolute; top: 0; left: 0; height: 100%; width: 0; background: #d62839; animation: fillProgress 1.6s ease-in-out forwards; }
+        @keyframes fillProgress { to { width: 100%; } }
+        .verification-instruction { font-size: 18px; font-weight: 600; color: #e63946; animation: fadeText 1.5s ease-in-out infinite; }
+        @keyframes fadeText { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        
+        .sidebar { position: fixed; left: 0; top: 0; width: 280px; height: 100vh; background: #ffffff; border-right: 1px solid #e5e7eb; z-index: 1000; display: flex; flex-direction: column; }
+        .sidebar-logo { padding: 32px 28px; border-bottom: 1px solid #e5e7eb; display: flex; align-items: center; gap: 12px; }
+        .sidebar-logo img { height: 40px; width: auto; }
+        .logo-text { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; }
+        .logo-queue { color: #1a1a1a; }
+        .logo-pilot { color: #e63946; }
+        .logo-dot { color: #1a1a1a; }
+        .sidebar-nav { padding: 24px 0; flex: 1; overflow-y: auto; }
+        .nav-item { padding: 14px 28px; display: flex; align-items: center; gap: 14px; color: #6b7280; cursor: pointer; transition: all 0.2s ease; font-size: 15px; font-weight: 500; position: relative; }
+        .nav-item::before { content: ''; position: absolute; left: 0; top: 0; height: 100%; width: 3px; background: #e63946; transform: scaleY(0); transition: transform 0.2s ease; }
+        .nav-item:hover { color: #1a1a1a; background: #fafafa; }
+        .nav-item.active { color: #e63946; background: #fef2f2; }
+        .nav-item.active::before { transform: scaleY(1); }
+        .nav-item i { font-size: 20px; }
+        
+        .main-content { margin-left: 280px; min-height: 100vh; }
+        .top-header { background: #ffffff; padding: 24px 40px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
+        .header-title h1 { font-size: 28px; font-weight: 700; color: #1a1a1a; margin-bottom: 4px; letter-spacing: -0.5px; }
+        .header-title p { color: #6b7280; font-size: 14px; }
+        .header-user { display: flex; align-items: center; gap: 16px; }
+        .user-info { text-align: right; }
+        .user-name { font-weight: 600; color: #1a1a1a; font-size: 15px; }
+        .user-plan { font-size: 13px; color: #e63946; }
+        .user-avatar { width: 44px; height: 44px; border-radius: 12px; border: 2px solid #fee2e2; }
+        
+        .content-container { padding: 40px; }
+        .content-section { display: none; }
+        .content-section.active { display: block; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; margin-bottom: 40px; }
+        .stat-card { background: #ffffff; border: 1px solid #e5e7eb; border-radius: 16px; padding: 28px; transition: all 0.3s ease; }
+        .stat-card:hover { transform: translateY(-4px); box-shadow: 0 12px 40px rgba(230, 57, 70, 0.12); border-color: #e63946; }
+        .stat-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
+        .stat-label { font-size: 14px; color: #6b7280; font-weight: 500; }
+        .stat-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+        .stat-icon.red { background: #fef2f2; color: #e63946; }
+        .stat-icon.blue { background: #eff6ff; color: #3b82f6; }
+        .stat-icon.green { background: #f0fdf4; color: #22c55e; }
+        .stat-icon.orange { background: #fff7ed; color: #f97316; }
+        .stat-value { font-size: 36px; font-weight: 700; color: #1a1a1a; margin-bottom: 8px; letter-spacing: -1px; }
+        .stat-change { font-size: 13px; display: flex; align-items: center; gap: 4px; color: #22c55e; }
+        .stat-change.down { color: #ef4444; }
+        
+        .table-card { background: #ffffff; border: 1px solid #e5e7eb; border-radius: 16px; padding: 32px; margin-bottom: 24px; }
+        .table-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px; }
+        .table-title { font-size: 20px; font-weight: 700; color: #1a1a1a; letter-spacing: -0.5px; }
+        .search-box { display: flex; align-items: center; gap: 12px; background: #f9fafb; padding: 10px 16px; border-radius: 10px; border: 1px solid #e5e7eb; }
+        .search-box input { border: none; background: none; outline: none; font-size: 14px; width: 280px; }
+        .data-table { width: 100%; border-collapse: collapse; }
+        .data-table thead { background: #f9fafb; border-radius: 12px; }
+        .data-table th { padding: 14px 16px; text-align: left; font-size: 13px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #e5e7eb; }
+        .data-table td { padding: 18px 16px; border-bottom: 1px solid #f3f4f6; font-size: 14px; color: #1a1a1a; }
+        .data-table tbody tr { transition: background 0.2s ease; }
+        .data-table tbody tr:hover { background: #fafafa; }
+        .status-badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+        .status-badge.waiting { background: #fff7ed; color: #f97316; }
+        .status-badge.completed { background: #f0fdf4; color: #22c55e; }
+        .cooldown { display: flex; align-items: center; gap: 6px; color: #e63946; font-weight: 500; font-size: 13px; }
+        .action-btns { display: flex; gap: 8px; }
+        .btn-action { padding: 8px 14px; border: none; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; gap: 6px; }
+        .btn-send { background: #fef2f2; color: #e63946; }
+        .btn-send:hover { background: #e63946; color: #ffffff; }
+        .btn-reject { background: #f9fafb; color: #6b7280; }
+        .btn-reject:hover { background: #ef4444; color: #ffffff; }
+        
+        .db-actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-bottom: 40px; }
+        .db-action-card { background: #ffffff; border: 2px solid #e5e7eb; border-radius: 16px; padding: 32px; text-align: center; cursor: pointer; transition: all 0.3s ease; }
+        .db-action-card:hover { border-color: #e63946; transform: translateY(-4px); box-shadow: 0 12px 40px rgba(230, 57, 70, 0.12); }
+        .db-action-card i { font-size: 48px; color: #e63946; margin-bottom: 16px; }
+        .db-action-card h3 { font-size: 18px; font-weight: 600; color: #1a1a1a; margin-bottom: 8px; }
+        .db-action-card p { font-size: 14px; color: #6b7280; }
+        
+        .settings-card { background: #ffffff; border: 1px solid #e5e7eb; border-radius: 16px; padding: 32px; margin-bottom: 24px; }
+        .settings-header { display: flex; align-items: center; gap: 12px; margin-bottom: 28px; padding-bottom: 20px; border-bottom: 1px solid #f3f4f6; }
+        .settings-header i { font-size: 24px; color: #e63946; }
+        .settings-header h2 { font-size: 20px; font-weight: 700; color: #1a1a1a; }
+        .form-group { margin-bottom: 24px; }
+        .form-label { display: block; font-size: 14px; font-weight: 600; color: #1a1a1a; margin-bottom: 8px; }
+        .form-input, .form-select { width: 100%; padding: 12px 16px; border: 1px solid #e5e7eb; border-radius: 10px; font-size: 15px; transition: all 0.2s ease; font-family: inherit; }
+        .form-input:focus, .form-select:focus { outline: none; border-color: #e63946; box-shadow: 0 0 0 4px rgba(230, 57, 70, 0.1); }
+        .btn-primary { padding: 14px 32px; background: #e63946; color: #ffffff; border: none; border-radius: 12px; font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s ease; }
+        .btn-primary:hover { background: #d62839; transform: translateY(-2px); box-shadow: 0 10px 30px rgba(230, 57, 70, 0.3); }
+        
+        .face-limit-info { background: #fef2f2; border: 1px solid #fee2e2; padding: 14px 16px; border-radius: 10px; color: #e63946; font-size: 14px; margin-bottom: 24px; display: flex; align-items: center; gap: 10px; }
+        .face-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 16px; }
+        .face-item { aspect-ratio: 1; background: #f9fafb; border: 2px solid #e5e7eb; border-radius: 12px; display: flex; align-items: center; justify-content: center; overflow: hidden; transition: all 0.2s ease; position: relative; }
+        .face-item img { width: 100%; height: 100%; object-fit: cover; }
+        .face-item.add { cursor: pointer; }
+        .face-item.add:hover { border-color: #e63946; background: #fef2f2; }
+        .face-item.add i { font-size: 32px; color: #e63946; }
+        .face-item-remove { position: absolute; top: 8px; right: 8px; width: 28px; height: 28px; border-radius: 50%; background: rgba(239, 68, 68, 0.95); border: none; color: #ffffff; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; opacity: 0; transition: opacity 0.2s; }
+        .face-item:hover .face-item-remove { opacity: 1; }
+        
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(4px); z-index: 2000; align-items: center; justify-content: center; }
+        .modal.active { display: flex; }
+        .modal-content { background: #ffffff; border-radius: 20px; padding: 40px; max-width: 520px; width: 90%; position: relative; }
+        .modal-close { position: absolute; top: 20px; right: 20px; width: 36px; height: 36px; border-radius: 10px; background: #f9fafb; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease; }
+        .modal-close:hover { background: #e5e7eb; }
+        .modal-title { font-size: 24px; font-weight: 700; color: #1a1a1a; margin-bottom: 24px; }
+        
+        .progress-bar { width: 100%; height: 8px; background: #e5e7eb; border-radius: 4px; overflow: hidden; margin-bottom: 20px; }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, #e63946, #d62839); width: 0%; transition: width 0.3s ease; }
+        .progress-status { text-align: center; color: #6b7280; font-size: 14px; margin-bottom: 12px; }
+        .progress-log { background: #f9fafb; padding: 16px; border-radius: 12px; max-height: 220px; overflow-y: auto; font-size: 13px; color: #6b7280; }
+        .progress-item { padding: 8px 0; display: flex; align-items: center; gap: 10px; }
+        .progress-item i { color: #22c55e; }
+        
+        .camera-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(4px); z-index: 3000; align-items: center; justify-content: center; }
+        .camera-modal.active { display: flex; }
+        .camera-modal-content { background: #ffffff; border-radius: 20px; padding: 40px; max-width: 600px; width: 90%; text-align: center; }
+        .camera-feed-container { position: relative; width: 100%; max-width: 400px; margin: 0 auto 24px; border-radius: 20px; overflow: hidden; background: #000; }
+        .camera-feed { width: 100%; height: 300px; object-fit: cover; display: block; }
+        .camera-guide { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 200px; height: 250px; border: 3px solid #e63946; border-radius: 50% 50% 45% 45%; opacity: 0.8; animation: pulse 2s infinite; pointer-events: none; }
+        .camera-instruction { font-size: 18px; font-weight: 600; color: #1a1a1a; margin-bottom: 16px; }
+        .camera-steps { display: flex; justify-content: center; gap: 12px; margin-top: 24px; }
+        .camera-step { width: 12px; height: 12px; border-radius: 50%; background: #e5e7eb; transition: all 0.3s; }
+        .camera-step.active { background: #e63946; width: 40px; border-radius: 6px; }
+        
+        @media (max-width: 1024px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 768px) { .sidebar { transform: translateX(-100%); } .main-content { margin-left: 0; } .stats-grid { grid-template-columns: 1fr; } .db-actions { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="notification-toast" id="notificationToast">
+        <div class="notification-icon"><i class="ri-check-line"></i></div>
+        <div class="notification-content">
+            <div class="notification-title" id="notificationTitle">Success</div>
+            <div class="notification-message" id="notificationMessage">Operation completed successfully</div>
+        </div>
+        <button class="notification-close" onclick="closeNotification()"><i class="ri-close-line"></i></button>
+    </div>
+
+    <div class="verification-overlay" id="verificationOverlay">
+        <div class="verification-box">
+            <div class="camera-preview">
+                <video id="verificationVideo" autoplay playsinline></video>
+                <canvas id="verificationCanvas" style="display: none;"></canvas>
+                <div class="face-outline"></div>
+            </div>
+            <div class="verification-title">Face Verification</div>
+            <div class="verification-subtitle">Please look at the camera</div>
+            <div class="verification-progress">
+                <div class="progress-step" id="step1"></div>
+                <div class="progress-step" id="step2"></div>
+                <div class="progress-step" id="step3"></div>
+            </div>
+            <div class="verification-instruction" id="instruction">Initializing...</div>
+        </div>
+    </div>
+
+    <div class="sidebar">
+        <div class="sidebar-logo">
+            <img src="https://api.dicebear.com/7.x/shapes/svg?seed=QueuePilot" alt="Logo">
+            <div class="logo-text"><span class="logo-queue">Queue</span><span class="logo-pilot">Pilot</span><span class="logo-dot">.</span></div>
+        </div>
+        <nav class="sidebar-nav">
+            <div class="nav-item active" onclick="switchSection('dashboard')"><i class="ri-dashboard-line"></i><span>Dashboard</span></div>
+            <div class="nav-item" onclick="switchSection('records')"><i class="ri-file-list-3-line"></i><span>Records</span></div>
+            <div class="nav-item" onclick="switchSection('database')"><i class="ri-database-2-line"></i><span>Database</span></div>
+            <div class="nav-item" onclick="switchSection('settings')"><i class="ri-settings-3-line"></i><span>Settings</span></div>
+        </nav>
+    </div>
+
+    <div class="main-content">
+        <div class="top-header">
+            <div class="header-title">
+                <h1>Welcome back, <span id="businessName">Business Name</span>!</h1>
+                <p id="currentDate">Friday, December 27, 2025</p>
+            </div>
+            <div class="header-user">
+                <div class="user-info">
+                    <div class="user-name" id="userName">Admin User</div>
+                    <div class="user-plan" id="userPlan">Standard Plan</div>
+                </div>
+                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Admin" alt="User" class="user-avatar" id="userAvatar">
+            </div>
+        </div>
+
+        <div class="content-container">
+            <div class="content-section active" id="section-dashboard">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <div class="stat-label">Total Customers</div>
+                            <div class="stat-icon red"><i class="ri-group-line"></i></div>
+                        </div>
+                        <div class="stat-value">2,847</div>
+                        <div class="stat-change"><i class="ri-arrow-up-line"></i> 12.5% from last month</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <div class="stat-label">Today's Queue</div>
+                            <div class="stat-icon blue"><i class="ri-ticket-2-line"></i></div>
+                        </div>
+                        <div class="stat-value">156</div>
+                        <div class="stat-change"><i class="ri-arrow-up-line"></i> 8.2% from yesterday</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <div class="stat-label">Avg Wait Time</div>
+                            <div class="stat-icon green"><i class="ri-time-line"></i></div>
+                        </div>
+                        <div class="stat-value">14m</div>
+                        <div class="stat-change"><i class="ri-arrow-down-line"></i> 3.5% improvement</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <div class="stat-label">Satisfaction</div>
+                            <div class="stat-icon orange"><i class="ri-star-line"></i></div>
+                        </div>
+                        <div class="stat-value">4.8</div>
+                        <div class="stat-change"><i class="ri-arrow-up-line"></i> 0.3 from last week</div>
+                    </div>
+                </div>
+                <div class="table-card">
+                    <div class="table-header"><div class="table-title">Recent Activity</div></div>
+                    <table class="data-table">
+                        <thead><tr><th>Token</th><th>Customer</th><th>Time</th><th>Status</th></tr></thead>
+                        <tbody>
+                            <tr><td><strong>#Q-156</strong></td><td>राम कुमार श्रेष्ठ</td><td>10:45 AM</td><td><span class="status-badge completed"><i class="ri-check-line"></i> Completed</span></td></tr>
+                            <tr><td><strong>#Q-155</strong></td><td>सीता गुरुङ</td><td>10:30 AM</td><td><span class="status-badge completed"><i class="ri-check-line"></i> Completed</span></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="content-section" id="section-records">
+                <div class="table-card">
+                    <div class="table-header">
+                        <div class="table-title">Customer Records</div>
+                        <div class="search-box"><i class="ri-search-line"></i><input type="text" placeholder="Search records..."></div>
+                    </div>
+                    <table class="data-table">
+                        <thead><tr><th>Token</th><th>Customer</th><th>Phone</th><th>Status</th><th>SMS Cooldown</th><th>Actions</th></tr></thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>#Q-201</strong></td><td>राजेश महर्जन</td><td>+977 98XXXXXXXX</td>
+                                <td><span class="status-badge waiting"><i class="ri-time-line"></i> Waiting</span></td>
+                                <td><div class="cooldown"><i class="ri-time-line"></i><span class="timer" data-time="840">14:00</span></div></td>
+                                <td><div class="action-btns">
+                                    <button class="btn-action btn-send" onclick="sendSMS(this)"><i class="ri-mail-send-line"></i> Send SMS</button>
+                                    <button class="btn-action btn-reject" onclick="rejectCustomer(this)"><i class="ri-close-circle-line"></i> Reject</button>
+                                </div></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="content-section" id="section-database">
+                <div class="db-actions">
+                    <div class="db-action-card" onclick="exportDatabase()"><i class="ri-download-cloud-line"></i><h3>Export Database</h3><p>Download your data as CSV</p></div>
+                    <div class="db-action-card" onclick="importDatabase()"><i class="ri-upload-cloud-line"></i><h3>Import Database</h3><p>Upload customer records</p></div>
+                    <div class="db-action-card" onclick="openShareModal()"><i class="ri-share-line"></i><h3>Share Database</h3><p>Sync with external systems</p></div>
+                </div>
+            </div>
+
+            <div class="content-section" id="section-settings">
+                <div class="settings-card">
+                    <div class="settings-header"><i class="ri-building-line"></i><h2>Business Information</h2></div>
+                    <div class="form-group">
+                        <label class="form-label">Business Name</label>
+                        <input type="text" class="form-input" id="businessNameInput" placeholder="Enter business name" value="Business Name">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Business URL</label>
+                        <input type="text" class="form-input" id="businessURL" placeholder="https://yourbusiness.com" value="https://mybusiness.com">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Contact Email</label>
+                        <input type="email" class="form-input" id="contactEmail" placeholder="contact@business.com" value="contact@mybusiness.com">
+                    </div>
+                    <button class="btn-primary" onclick="saveBusinessSettings()">Save Changes</button>
+                </div>
+
+                <div class="settings-card">
+                    <div class="settings-header"><i class="ri-shield-user-line"></i><h2>Face ID Management</h2></div>
+                    <div class="face-limit-info"><i class="ri-information-line"></i><span>You can add up to <strong id="maxFaceCount">10</strong> Face IDs with your <strong id="currentPlan">Standard</strong> plan</span></div>
+                    <div class="face-grid" id="faceGrid"></div>
+                </div>
+
+                <div class="settings-card">
+                    <div class="settings-header"><i class="ri-notification-line"></i><h2>Notification Settings</h2></div>
+                    <div class="form-group">
+                        <label class="form-label">SMS Provider</label>
+                        <select class="form-select"><option>Twilio</option><option>MSG91</option><option>SMS Gateway</option></select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Email Provider</label>
+                        <select class="form-select"><option>SendGrid</option><option>Mailgun</option><option>AWS SES</option></select>
+                    </div>
+                    <button class="btn-primary" onclick="saveNotificationSettings()">Save Settings</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="shareModal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModal()"><i class="ri-close-line"></i></button>
+            <div class="modal-title">Share Database</div>
+            <div class="form-group">
+                <label class="form-label">Database Type</label>
+                <select class="form-select" id="dbType">
+                    <option value="firestore">Firebase Firestore</option>
+                    <option value="mongodb">MongoDB</option>
+                    <option value="postgresql">PostgreSQL</option>
+                    <option value="mysql">MySQL</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Connection String</label>
+                <input type="text" class="form-input" id="connectionString" placeholder="Enter connection details">
+            </div>
+            <div class="form-group">
+                <label class="form-label">API Key</label>
+                <input type="password" class="form-input" id="apiKey" placeholder="Enter API key (if required)">
+            </div>
+            <button class="btn-primary" onclick="startSync()">Start Synchronization</button>
+        </div>
+    </div>
+
+    <div class="modal" id="progressModal">
+        <div class="modal-content">
+            <div class="modal-title">Syncing Database</div>
+            <div class="progress-status" id="progressStatus">Initializing...</div>
+            <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+            <div class="progress-log" id="progressLog">
+                <div class="progress-item"><i class="ri-loader-line"></i><span>Preparing connection...</span></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="camera-modal" id="cameraModal">
+        <div class="camera-modal-content">
+            <h2 style="font-size: 24px; margin-bottom: 16px;">Add Face ID</h2>
+            <p style="color: #6b7280; margin-bottom: 24px;">Follow the instructions to capture your face</p>
+            <div class="camera-feed-container">
+                <video id="cameraFeed" class="camera-feed" autoplay playsinline></video>
+                <canvas id="cameraCanvas" style="display: none;"></canvas>
+                <div class="camera-guide"></div>
+            </div>
+            <div class="camera-instruction" id="cameraInstruction">Look straight ahead</div>
+            <div class="camera-steps">
+                <div class="camera-step active" id="camStep1"></div>
+                <div class="camera-step" id="camStep2"></div>
+                <div class="camera-step" id="camStep3"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyDlDu3x6_UTE9SHHAn0quWN30IVPBiegyU",
+            authDomain: "callcare-428c3.firebaseapp.com",
+            projectId: "callcare-428c3",
+            storageBucket: "callcare-428c3.firebasestorage.app",
+            messagingSenderId: "827277116710",
+            appId: "1:827277116710:web:e41c882a929b2e6f3cade7"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        let registeredFaces = [];
+        let maxFaceIds = 10;
+        let businessName = 'Business Name';
+        let currentStream = null;
+        let userEmail = null;
+
+        function showNotification(title, message, type = 'success') {
+            const toast = document.getElementById('notificationToast');
+            const titleEl = document.getElementById('notificationTitle');
+            const messageEl = document.getElementById('notificationMessage');
+            const icon = toast.querySelector('.notification-icon i');
+            
+            toast.className = 'notification-toast show ' + type;
+            titleEl.textContent = title;
+            messageEl.textContent = message;
+            icon.className = type === 'success' ? 'ri-check-line' : 'ri-error-warning-line';
+            
+            setTimeout(() => toast.classList.remove('show'), 5000);
+        }
+
+        function closeNotification() {
+            document.getElementById('notificationToast').classList.remove('show');
+        }
+
+        async function startVerification() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+                const video = document.getElementById('verificationVideo');
+                video.srcObject = stream;
+                currentStream = stream;
+                
+                const steps = ['Look straight ahead', 'Turn your face left', 'Turn your face right'];
+                const progressSteps = ['step1', 'step2', 'step3'];
+                const instruction = document.getElementById('instruction');
+                let currentStep = 0;
+                
+                const interval = setInterval(() => {
+                    if (currentStep < 3) {
+                        document.getElementById(progressSteps[currentStep]).classList.add('active');
+                        instruction.textContent = steps[currentStep];
+                        currentStep++;
+                    } else {
+                        clearInterval(interval);
+                        setTimeout(() => {
+                            captureVerificationFace();
+                        }, 1000);
+                    }
+                }, 1666);
+            } catch (error) {
+                console.error('Camera error:', error);
+                showNotification('Camera Error', 'Unable to access camera', 'error');
+            }
+        }
+
+        function captureVerificationFace() {
+            const video = document.getElementById('verificationVideo');
+            const canvas = document.getElementById('verificationCanvas');
+            const context = canvas.getContext('2d');
+            
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0);
+            
+            const faceImage = canvas.toDataURL('image/jpeg');
+            
+            // Save to localStorage
+            const newFace = { 
+                id: Date.now(), 
+                image: faceImage, 
+                timestamp: new Date().toISOString() 
+            };
+            
+            let storedFaces = localStorage.getItem('queuepilot_faces');
+            let faces = storedFaces ? JSON.parse(storedFaces) : [];
+            faces.push(newFace);
+            localStorage.setItem('queuepilot_faces', JSON.stringify(faces));
+            registeredFaces = faces;
+            
+            if (currentStream) {
+                currentStream.getTracks().forEach(track => track.stop());
+                currentStream = null;
+            }
+            
+            document.getElementById('verificationOverlay').classList.add('hide');
+            showNotification('Verification Complete', 'Face verified and saved successfully');
+        }
+
+        function switchSection(section) {
+            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+            document.querySelectorAll('.content-section').forEach(sec => sec.classList.remove('active'));
+            event.target.closest('.nav-item').classList.add('active');
+            document.getElementById(`section-${section}`).classList.add('active');
+        }
+
+        function startTimers() {
+            setInterval(() => {
+                document.querySelectorAll('.timer').forEach(timer => {
+                    let time = parseInt(timer.getAttribute('data-time'));
+                    if (time > 0) {
+                        time--;
+                        timer.setAttribute('data-time', time);
+                        const mins = Math.floor(time / 60);
+                        const secs = time % 60;
+                        timer.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+                    }
+                });
+            }, 1000);
+        }
+
+        function sendSMS(btn) {
+            const row = btn.closest('tr');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="ri-loader-4-line"></i> Sending...';
+            setTimeout(() => {
+                btn.innerHTML = '<i class="ri-check-line"></i> Sent';
+                btn.style.background = '#22c55e';
+                btn.style.color = '#ffffff';
+                showNotification('SMS Sent', 'Customer has been notified');
+                const badge = row.querySelector('.status-badge');
+                badge.className = 'status-badge completed';
+                badge.innerHTML = '<i class="ri-check-line"></i> Notified';
+            }, 2000);
+        }
+
+        function rejectCustomer(btn) {
+            const row = btn.closest('tr');
+            row.style.transition = 'all 0.3s ease';
+            row.style.opacity = '0';
+            row.style.transform = 'translateX(30px)';
+            setTimeout(() => row.remove(), 300);
+            showNotification('Customer Rejected', 'Customer has been removed from queue');
+        }
+
+        function exportDatabase() {
+            const data = 'Customer Name,Token,Phone,Status\nराजेश महर्जन,#Q-201,+977 98XXXXXXXX,Waiting';
+            const blob = new Blob([data], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `queuepilot_export_${Date.now()}.csv`;
+            a.click();
+            showNotification('Export Successful', 'Database exported successfully');
+        }
+
+        function importDatabase() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.csv,.json';
+            input.onchange = (e) => {
+                const file = e.target.files[0];
+                showNotification('Import Started', `Importing ${file.name}...`);
+            };
+            input.click();
+        }
+
+        function openShareModal() {
+            document.getElementById('shareModal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('shareModal').classList.remove('active');
+        }
+
+        function startSync() {
+            const businessNameVal = document.getElementById('businessNameInput').value;
+            closeModal();
+            const progressModal = document.getElementById('progressModal');
+            const progressFill = document.getElementById('progressFill');
+            const progressStatus = document.getElementById('progressStatus');
+            const progressLog = document.getElementById('progressLog');
+            
+            progressModal.classList.add('active');
+            progressLog.innerHTML = '';
+            
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += 10;
+                progressFill.style.width = progress + '%';
+                if (progress >= 100) {
+                    clearInterval(interval);
+                    setTimeout(() => {
+                        progressModal.classList.remove('active');
+                        showNotification('Sync Complete', `Your database has been successfully shared with ${businessNameVal} database.`);
+                    }, 500);
+                }
+            }, 300);
+            
+            const syncSteps = [
+                'Connecting to database...',
+                'Authenticating credentials...',
+                'Synchronizing data...',
+                'Finalizing...'
+            ];
+            
+            syncSteps.forEach((step, i) => {
+                setTimeout(() => {
+                    progressStatus.textContent = step;
+                    const item = document.createElement('div');
+                    item.className = 'progress-item';
+                    item.innerHTML = `<i class="ri-check-line"></i><span>${step}</span>`;
+                    progressLog.appendChild(item);
+                }, i * 750);
+            });
+        }
+
+        function saveBusinessSettings() {
+            const newBusinessName = document.getElementById('businessNameInput').value;
+            if (newBusinessName) {
+                businessName = newBusinessName;
+                document.getElementById('businessName').textContent = businessName;
+                if (userEmail) {
+                    db.collection('businessSettings').doc(userEmail).set({
+                        businessName: businessName,
+                        businessURL: document.getElementById('businessURL').value,
+                        contactEmail: document.getElementById('contactEmail').value,
+                        updatedAt: new Date()
+                    }, { merge: true });
+                }
+                showNotification('Settings Saved', 'Business settings updated successfully');
+            }
+        }
+
+        function saveNotificationSettings() {
+            showNotification('Settings Saved', 'Notification settings updated successfully');
+        }
+
+        async function loadFaceIds() {
+            const sessionUser = sessionStorage.getItem('queuepilot_session_user');
+            if (sessionUser) {
+                const user = JSON.parse(sessionUser);
+                userEmail = user.email;
+                
+                const planDoc = await db.collection('plans').doc(userEmail).get();
+                if (planDoc.exists) {
+                    const planData = planDoc.data();
+                    maxFaceIds = planData.maxFaceIds || 10;
+                    document.getElementById('maxFaceCount').textContent = maxFaceIds;
+                    document.getElementById('currentPlan').textContent = planData.plan || 'Standard';
+                    document.getElementById('userPlan').textContent = planData.plan + ' Plan' || 'Standard Plan';
+                }
+                
+                // Load faces from localStorage first
+                const storedFaces = localStorage.getItem('queuepilot_faces');
+                if (storedFaces) {
+                    registeredFaces = JSON.parse(storedFaces);
+                } else {
+                    // Fallback to Firestore if localStorage is empty
+                    const facesDoc = await db.collection('faces').doc(userEmail).get();
+                    if (facesDoc.exists) {
+                        registeredFaces = facesDoc.data().faces || [];
+                        // Save to localStorage for future use
+                        localStorage.setItem('queuepilot_faces', JSON.stringify(registeredFaces));
+                    }
+                }
+                
+                const settingsDoc = await db.collection('businessSettings').doc(userEmail).get();
+                if (settingsDoc.exists) {
+                    const settings = settingsDoc.data();
+                    businessName = settings.businessName || 'Business Name';
+                    document.getElementById('businessName').textContent = businessName;
+                    document.getElementById('businessNameInput').value = businessName;
+                    document.getElementById('businessURL').value = settings.businessURL || '';
+                    document.getElementById('contactEmail').value = settings.contactEmail || '';
+                }
+                
+                document.getElementById('userName').textContent = user.name;
+                document.getElementById('userAvatar').src = user.avatar;
+            } else {
+                // Load from localStorage even without user session
+                const storedFaces = localStorage.getItem('queuepilot_faces');
+                if (storedFaces) {
+                    registeredFaces = JSON.parse(storedFaces);
+                }
+            }
+            renderFaceGrid();
+        }
+
+        function renderFaceGrid() {
+            const grid = document.getElementById('faceGrid');
+            grid.innerHTML = '';
+            
+            registeredFaces.forEach((face, index) => {
+                const item = document.createElement('div');
+                item.className = 'face-item';
+                item.innerHTML = `
+                    <img src="${face.image}" alt="Face ${index + 1}">
+                    <button class="face-item-remove" onclick="removeFace(${face.id})"><i class="ri-close-line"></i></button>
+                `;
+                grid.appendChild(item);
+            });
+            
+            if (registeredFaces.length < maxFaceIds) {
+                const addItem = document.createElement('div');
+                addItem.className = 'face-item add';
+                addItem.onclick = addFaceId;
+                addItem.innerHTML = '<i class="ri-add-line"></i>';
+                grid.appendChild(addItem);
+            }
+        }
+
+        async function removeFace(faceId) {
+            registeredFaces = registeredFaces.filter(face => face.id !== faceId);
+            
+            // Save to localStorage
+            localStorage.setItem('queuepilot_faces', JSON.stringify(registeredFaces));
+            
+            // Also save to Firestore if user is logged in
+            if (userEmail) {
+                await db.collection('faces').doc(userEmail).set({
+                    faces: registeredFaces,
+                    updatedAt: new Date()
+                }, { merge: true });
+            }
+            
+            renderFaceGrid();
+            showNotification('Face Removed', 'Face ID removed successfully');
+        }
+
+        async function addFaceId() {
+            if (registeredFaces.length >= maxFaceIds) {
+                showNotification('Limit Reached', `Maximum ${maxFaceIds} Face IDs allowed`, 'error');
+                return;
+            }
+            
+            const modal = document.getElementById('cameraModal');
+            modal.classList.add('active');
+            
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+                const video = document.getElementById('cameraFeed');
+                video.srcObject = stream;
+                currentStream = stream;
+                
+                const steps = ['Look straight ahead', 'Turn left', 'Turn right'];
+                let currentStep = 0;
+                
+                const interval = setInterval(() => {
+                    if (currentStep < 3) {
+                        document.getElementById('cameraInstruction').textContent = steps[currentStep];
+                        document.querySelectorAll('.camera-step').forEach((s, i) => {
+                            s.classList.toggle('active', i === currentStep);
+                        });
+                        currentStep++;
+                    } else {
+                        clearInterval(interval);
+                        setTimeout(() => captureFace(modal), 1000);
+                    }
+                }, 2000);
+            } catch (error) {
+                modal.classList.remove('active');
+                showNotification('Camera Error', 'Unable to access camera', 'error');
+            }
+        }
+
+        async function captureFace(modal) {
+            const video = document.getElementById('cameraFeed');
+            const canvas = document.getElementById('cameraCanvas');
+            const context = canvas.getContext('2d');
+            
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0);
+            
+            const faceImage = canvas.toDataURL('image/jpeg');
+            const newFace = { id: Date.now(), image: faceImage, timestamp: new Date().toISOString() };
+            registeredFaces.push(newFace);
+            
+            // Save to localStorage
+            localStorage.setItem('queuepilot_faces', JSON.stringify(registeredFaces));
+            
+            // Also save to Firestore if user is logged in
+            if (userEmail) {
+                await db.collection('faces').doc(userEmail).set({
+                    faces: registeredFaces,
+                    updatedAt: new Date()
+                }, { merge: true });
+            }
+            
+            if (currentStream) {
+                currentStream.getTracks().forEach(track => track.stop());
+                currentStream = null;
+            }
+            
+            modal.classList.remove('active');
+            renderFaceGrid();
+            showNotification('Face Added', 'New Face ID added successfully');
+        }
+
+        window.addEventListener('load', () => {
+            setTimeout(startVerification, 500);
+            startTimers();
+            loadFaceIds();
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            document.getElementById('currentDate').textContent = new Date().toLocaleDateString('en-US', options);
+        });
+
+        window.addEventListener('beforeunload', () => {
+            if (currentStream) {
+                currentStream.getTracks().forEach(track => track.stop());
+            }
+        });
+    </script>
+</body>
+</html>

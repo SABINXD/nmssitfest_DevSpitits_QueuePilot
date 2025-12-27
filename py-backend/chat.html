@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QueuePilot Chat</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <title>QueuePilot - Voice Assistant</title>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -14,854 +14,846 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif;
-            color: #1a1a1a;
-            background: #fafafa;
+            background: #0f0f0f;
             height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             overflow: hidden;
         }
 
-        header {
+        .phone-frame {
+            width: 380px;
+            height: 780px;
+            background: #1a1a1a;
+            border-radius: 48px;
+            padding: 12px;
+            box-shadow: 0 40px 100px rgba(0, 0, 0, 0.8);
+            position: relative;
+        }
+
+        .phone-screen {
+            width: 100%;
+            height: 100%;
+            background: #ffffff;
+            border-radius: 36px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .status-bar {
+            padding: 16px 24px 12px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 20px 60px;
-            background: #ffffff;
-            border-bottom: 1px solid #e8e8e8;
+            font-size: 14px;
+            color: #1a1a1a;
+            font-weight: 500;
         }
 
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            font-size: 24px;
+        .time {
             font-weight: 600;
+        }
+
+        .status-icons {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .status-icons i {
+            font-size: 16px;
+        }
+
+        .call-header {
+            padding: 32px 28px 24px;
+            background: #ffffff;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .call-title {
+            font-size: 14px;
+            color: #666666;
+            margin-bottom: 4px;
+            font-weight: 500;
+        }
+
+        .call-name {
+            font-size: 24px;
+            font-weight: 700;
             color: #1a1a1a;
         }
 
-        .logo-queue { color: #1a1a1a; }
-        .logo-pilot { color: #e63946; }
-        .logo-dot { color: #1a1a1a; }
-
-        .header-actions {
-            display: flex;
-            gap: 16px;
-            align-items: center;
-        }
-
-        .status-indicator {
-            display: flex;
+        .call-status-indicator {
+            margin-top: 12px;
+            padding: 8px 14px;
+            background: #f8f8f8;
+            border-radius: 20px;
+            display: inline-flex;
             align-items: center;
             gap: 8px;
-            padding: 8px 16px;
-            background: #f3f4f6;
-            border-radius: 8px;
             font-size: 13px;
+            color: #666666;
+            font-weight: 500;
+        }
+
+        .call-status-indicator.active {
+            background: #e8f5e9;
+            color: #2e7d32;
         }
 
         .status-dot {
             width: 8px;
             height: 8px;
             border-radius: 50%;
-            background: #9ca3af;
+            background: #999999;
         }
 
-        .status-dot.connected {
-            background: #22c55e;
-            animation: pulse-green 2s infinite;
+        .status-dot.active {
+            background: #4caf50;
+            animation: pulse-dot 2s infinite;
         }
 
-        @keyframes pulse-green {
+        @keyframes pulse-dot {
             0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
+            50% { opacity: 0.4; }
         }
 
-        .btn-clear {
-            padding: 10px 20px;
-            background: #f3f4f6;
-            color: #1a1a1a;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 500;
-            transition: all 0.2s;
-        }
-
-        .btn-clear:hover {
-            background: #e5e7eb;
-        }
-
-        .chat-container {
-            display: flex;
-            height: calc(100vh - 80px);
-        }
-
-        .sidebar {
-            width: 280px;
+        .avatar-container {
+            padding: 48px 28px;
+            text-align: center;
             background: #ffffff;
-            border-right: 1px solid #e8e8e8;
-            padding: 24px;
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-        }
-
-        .sidebar-title {
-            font-size: 18px;
-            font-weight: 600;
-            color: #1a1a1a;
-            margin-bottom: 8px;
-        }
-
-        .mode-toggle {
-            display: flex;
-            gap: 8px;
-            padding: 6px;
-            background: #f3f4f6;
-            border-radius: 12px;
-        }
-
-        .mode-btn {
-            flex: 1;
-            padding: 10px;
-            border: none;
-            border-radius: 8px;
-            background: transparent;
-            cursor: pointer;
-            font-size: 13px;
-            font-weight: 600;
-            transition: all 0.2s;
-            color: #6b7280;
-        }
-
-        .mode-btn.active {
-            background: #ffffff;
-            color: #e63946;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-        }
-
-        .model-info {
-            padding: 16px;
-            background: #fef2f2;
-            border-radius: 12px;
-            border: 1px solid #fee2e2;
-        }
-
-        .model-name {
-            font-size: 14px;
-            font-weight: 600;
-            color: #1a1a1a;
-            margin-bottom: 4px;
-        }
-
-        .model-desc {
-            font-size: 12px;
-            color: #6b7280;
-        }
-
-        .chat-main {
             flex: 1;
             display: flex;
             flex-direction: column;
-            background: #ffffff;
+            align-items: center;
+            justify-content: center;
         }
 
-        .messages {
-            flex: 1;
-            overflow-y: auto;
-            padding: 40px;
-            display: flex;
-            flex-direction: column;
-            gap: 24px;
-        }
-
-        .message {
-            display: flex;
-            gap: 16px;
-            animation: slideIn 0.3s ease;
-        }
-
-        @keyframes slideIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .message-avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 12px;
+        .avatar-circle {
+            width: 160px;
+            height: 160px;
+            border-radius: 50%;
+            background: #e63946;
             display: flex;
             align-items: center;
             justify-content: center;
-            flex-shrink: 0;
+            margin-bottom: 32px;
+            position: relative;
         }
 
-        .user-avatar {
-            background: linear-gradient(135deg, #e63946 0%, #d62839 100%);
+        .avatar-circle.speaking {
+            animation: speaking-pulse 1.5s infinite;
+        }
+
+        @keyframes speaking-pulse {
+            0%, 100% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(230, 57, 70, 0.4);
+            }
+            50% {
+                transform: scale(1.05);
+                box-shadow: 0 0 0 20px rgba(230, 57, 70, 0);
+            }
+        }
+
+        .avatar-circle i {
+            font-size: 72px;
             color: #ffffff;
         }
 
-        .bot-avatar {
-            background: #f3f4f6;
-            color: #1a1a1a;
-        }
-
-        .message-content {
-            flex: 1;
-            max-width: 800px;
-        }
-
-        .message-text {
-            background: #f9fafb;
-            padding: 16px 20px;
-            border-radius: 16px;
-            line-height: 1.6;
+        .call-info {
             font-size: 15px;
-            color: #1a1a1a;
-            white-space: pre-wrap;
+            color: #666666;
+            font-weight: 500;
         }
 
-        .message.user .message-text {
-            background: linear-gradient(135deg, #e63946 0%, #d62839 100%);
+        .chat-view {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px;
+            background: #f8f8f8;
+            display: none;
+        }
+
+        .chat-view.active {
+            display: block;
+        }
+
+        .chat-message {
+            margin-bottom: 16px;
+            animation: messageSlide 0.3s ease;
+        }
+
+        @keyframes messageSlide {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message-bubble {
+            padding: 14px 18px;
+            border-radius: 20px;
+            max-width: 80%;
+            font-size: 15px;
+            line-height: 1.5;
+            position: relative;
+        }
+
+        .chat-message.ai .message-bubble {
+            background: #ffffff;
+            color: #1a1a1a;
+            border: 1px solid #e0e0e0;
+            margin-right: auto;
+            border-bottom-left-radius: 4px;
+        }
+
+        .chat-message.user .message-bubble {
+            background: #e63946;
             color: #ffffff;
+            margin-left: auto;
+            border-bottom-right-radius: 4px;
         }
 
         .message-time {
-            font-size: 12px;
-            color: #9ca3af;
-            margin-top: 8px;
+            font-size: 11px;
+            color: #999999;
+            margin-top: 6px;
         }
 
-        .message-actions {
-            display: flex;
-            gap: 8px;
-            margin-top: 8px;
+        .chat-message.ai .message-time {
+            text-align: left;
         }
 
-        .action-btn {
-            padding: 6px 12px;
-            background: #f3f4f6;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 12px;
-            color: #6b7280;
-            transition: all 0.2s;
-        }
-
-        .action-btn:hover {
-            background: #e5e7eb;
-            color: #1a1a1a;
-        }
-
-        .action-btn.playing {
-            background: #e63946;
+        .chat-message.user .message-time {
+            text-align: right;
             color: #ffffff;
+            opacity: 0.7;
         }
 
         .typing-indicator {
             display: flex;
             gap: 6px;
-            padding: 16px 20px;
+            padding: 14px 18px;
+            background: #ffffff;
+            border: 1px solid #e0e0e0;
+            border-radius: 20px;
+            width: fit-content;
+            border-bottom-left-radius: 4px;
         }
 
         .typing-dot {
             width: 8px;
             height: 8px;
             border-radius: 50%;
-            background: #9ca3af;
-            animation: bounce 1.4s infinite;
+            background: #999999;
+            animation: typing-bounce 1.4s infinite;
         }
 
         .typing-dot:nth-child(2) { animation-delay: 0.2s; }
         .typing-dot:nth-child(3) { animation-delay: 0.4s; }
 
-        @keyframes bounce {
+        @keyframes typing-bounce {
             0%, 60%, 100% { transform: translateY(0); }
-            30% { transform: translateY(-10px); }
+            30% { transform: translateY(-8px); }
         }
 
-        .input-area {
-            padding: 24px 40px;
-            border-top: 1px solid #e8e8e8;
+        .voice-visualizer {
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .voice-visualizer.active {
+            opacity: 1;
+        }
+
+        .voice-bar {
+            width: 4px;
+            height: 20px;
+            background: #e63946;
+            border-radius: 2px;
+            animation: voice-wave 1s infinite;
+        }
+
+        .voice-bar:nth-child(2) { animation-delay: 0.1s; }
+        .voice-bar:nth-child(3) { animation-delay: 0.2s; }
+        .voice-bar:nth-child(4) { animation-delay: 0.3s; }
+        .voice-bar:nth-child(5) { animation-delay: 0.4s; }
+        .voice-bar:nth-child(6) { animation-delay: 0.5s; }
+        .voice-bar:nth-child(7) { animation-delay: 0.6s; }
+
+        @keyframes voice-wave {
+            0%, 100% { height: 20px; }
+            50% { height: 48px; }
+        }
+
+        .controls-panel {
+            padding: 32px 28px;
             background: #ffffff;
+            border-top: 1px solid #f0f0f0;
         }
 
-        .input-wrapper {
+        .control-buttons {
             display: flex;
-            gap: 12px;
-            align-items: flex-end;
-            max-width: 1000px;
-            margin: 0 auto;
-        }
-
-        .input-box {
-            flex: 1;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 14px 20px;
-            background: #f9fafb;
-            border: 2px solid #e5e7eb;
-            border-radius: 16px;
-            transition: all 0.2s;
-        }
-
-        .input-box:focus-within {
-            border-color: #e63946;
-            background: #ffffff;
-        }
-
-        #messageInput {
-            flex: 1;
-            border: none;
-            background: transparent;
-            font-size: 15px;
-            font-family: inherit;
-            resize: none;
-            max-height: 120px;
-            outline: none;
-        }
-
-        .input-btn {
-            width: 36px;
-            height: 36px;
-            border: none;
-            background: transparent;
-            cursor: pointer;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
             justify-content: center;
-            transition: all 0.2s;
-            color: #6b7280;
-        }
-
-        .input-btn:hover {
-            background: #e5e7eb;
-            color: #1a1a1a;
-        }
-
-        .input-btn.recording {
-            color: #e63946;
-            animation: pulse-red 1.5s infinite;
-        }
-
-        @keyframes pulse-red {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.7; transform: scale(1.1); }
-        }
-
-        .send-btn {
-            width: 48px;
-            height: 48px;
-            border: none;
-            background: linear-gradient(135deg, #e63946 0%, #d62839 100%);
-            color: #ffffff;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .send-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(230, 57, 70, 0.3);
-        }
-
-        .send-btn:disabled {
-            background: #9ca3af;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .empty-state {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100%;
-            color: #9ca3af;
-            text-align: center;
-            padding: 40px;
-        }
-
-        .empty-icon {
-            font-size: 64px;
+            gap: 28px;
             margin-bottom: 24px;
-            color: #e5e7eb;
         }
 
-        .empty-title {
-            font-size: 24px;
-            font-weight: 600;
-            color: #1a1a1a;
-            margin-bottom: 12px;
-        }
-
-        .empty-desc {
-            font-size: 15px;
-            color: #6b7280;
-        }
-
-        .voice-indicator {
-            display: none;
+        .control-btn {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            display: flex;
             align-items: center;
-            gap: 8px;
-            padding: 12px 16px;
-            background: #fef2f2;
-            border: 1px solid #fee2e2;
-            border-radius: 10px;
+            justify-content: center;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .control-btn i {
+            font-size: 28px;
+        }
+
+        .call-button {
+            background: #4caf50;
+            color: #ffffff;
+        }
+
+        .call-button:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px rgba(76, 175, 80, 0.3);
+        }
+
+        .call-button.active {
+            background: #f44336;
+            animation: call-active-pulse 2s infinite;
+        }
+
+        @keyframes call-active-pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .chat-button {
+            background: #f0f0f0;
+            color: #666666;
+        }
+
+        .chat-button:hover {
+            background: #e0e0e0;
+            transform: translateY(-4px);
+        }
+
+        .chat-button.active {
+            background: #e63946;
+            color: #ffffff;
+        }
+
+        .control-label {
+            text-align: center;
             font-size: 13px;
-            color: #e63946;
+            color: #666666;
             font-weight: 500;
         }
 
-        .voice-indicator.active {
+        .notification-toast {
+            position: fixed;
+            top: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #ffffff;
+            padding: 16px 24px;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            display: none;
+            align-items: center;
+            gap: 12px;
+            z-index: 1000;
+            animation: toastSlide 0.3s ease;
+        }
+
+        .notification-toast.show {
             display: flex;
         }
 
-        .voice-wave {
-            width: 3px;
-            height: 16px;
-            background: #e63946;
-            border-radius: 2px;
-            animation: wave 1s infinite;
+        @keyframes toastSlide {
+            from {
+                transform: translateX(-50%) translateY(-100px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(-50%) translateY(0);
+                opacity: 1;
+            }
         }
 
-        .voice-wave:nth-child(2) { animation-delay: 0.1s; }
-        .voice-wave:nth-child(3) { animation-delay: 0.2s; }
-
-        @keyframes wave {
-            0%, 100% { height: 16px; }
-            50% { height: 8px; }
+        .notification-toast.success {
+            border-left: 4px solid #4caf50;
         }
 
-        .error-message {
-            padding: 12px 16px;
-            background: #fef2f2;
-            border: 1px solid #fee2e2;
-            border-radius: 10px;
-            color: #e63946;
+        .notification-toast.error {
+            border-left: 4px solid #f44336;
+        }
+
+        .notif-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .notification-toast.success .notif-icon {
+            background: #e8f5e9;
+            color: #4caf50;
+        }
+
+        .notification-toast.error .notif-icon {
+            background: #ffebee;
+            color: #f44336;
+        }
+
+        .notif-content {
+            flex: 1;
+        }
+
+        .notif-title {
+            font-weight: 600;
+            color: #1a1a1a;
+            font-size: 14px;
+        }
+
+        .notif-message {
             font-size: 13px;
-            margin-top: 12px;
-            display: none;
-        }
-
-        .error-message.show {
-            display: block;
-        }
-
-        @media (max-width: 768px) {
-            .sidebar {
-                display: none;
-            }
-
-            header {
-                padding: 16px 20px;
-            }
-
-            .messages {
-                padding: 20px;
-            }
-
-            .input-area {
-                padding: 16px 20px;
-            }
+            color: #666666;
         }
     </style>
 </head>
 <body>
-    <header>
-        <div class="logo">
-            <span class="logo-text">
-                <span class="logo-queue">Queue</span><span class="logo-pilot">Pilot</span><span class="logo-dot">.</span>
-            </span>
+    <div class="notification-toast" id="notification">
+        <div class="notif-icon">
+            <i class="ri-check-line"></i>
         </div>
-        <div class="header-actions">
-            <div class="status-indicator">
-                <div class="status-dot" id="statusDot"></div>
-                <span id="statusText">Connecting...</span>
-            </div>
-            <button class="btn-clear" onclick="clearChat()">
-                <i class="fas fa-trash"></i> Clear
-            </button>
+        <div class="notif-content">
+            <div class="notif-title" id="notifTitle">Success</div>
+            <div class="notif-message" id="notifMessage">Operation completed</div>
         </div>
-    </header>
+    </div>
 
-    <div class="chat-container">
-        <aside class="sidebar">
-            <div>
-                <div class="sidebar-title">Chat Mode</div>
-                <div class="mode-toggle">
-                    <button class="mode-btn active" onclick="setMode('text')">
-                        <i class="fas fa-keyboard"></i> Text
+    <div class="phone-frame">
+        <div class="phone-screen">
+            <div class="status-bar">
+                <div class="time" id="currentTime">9:41</div>
+                <div class="status-icons">
+                    <i class="ri-signal-wifi-fill"></i>
+                    <i class="ri-battery-fill"></i>
+                </div>
+            </div>
+
+            <div class="call-header">
+                <div class="call-title">AI Voice Assistant</div>
+                <div class="call-name">QueuePilot</div>
+                <div class="call-status-indicator" id="callStatus">
+                    <div class="status-dot"></div>
+                    <span id="callStatusText">Tap to start call</span>
+                </div>
+            </div>
+
+            <div class="avatar-container" id="avatarView">
+                <div class="avatar-circle" id="avatarCircle">
+                    <i class="ri-robot-2-fill"></i>
+                </div>
+                <div class="call-info" id="callInfo">Ready to help you book a token</div>
+                
+                <div class="voice-visualizer" id="voiceVisualizer">
+                    <div class="voice-bar"></div>
+                    <div class="voice-bar"></div>
+                    <div class="voice-bar"></div>
+                    <div class="voice-bar"></div>
+                    <div class="voice-bar"></div>
+                    <div class="voice-bar"></div>
+                    <div class="voice-bar"></div>
+                </div>
+            </div>
+
+            <div class="chat-view" id="chatView">
+                <!-- Messages will be added here -->
+            </div>
+
+            <div class="controls-panel">
+                <div class="control-buttons">
+                    <button class="control-btn call-button" id="callBtn" onclick="toggleCall()">
+                        <i class="ri-phone-fill"></i>
                     </button>
-                    <button class="mode-btn" onclick="setMode('voice')">
-                        <i class="fas fa-microphone"></i> Voice
-                    </button>
-                </div>
-            </div>
-
-            <div class="model-info">
-                <div class="model-name">
-                    <i class="fas fa-brain"></i> Groq AI (Llama 3.3)
-                </div>
-                <div class="model-desc">
-                    Lightning-fast AI powered by Meta's Llama 3.3 70B
-                </div>
-            </div>
-
-            <div class="voice-indicator" id="voiceIndicator">
-                <div class="voice-wave"></div>
-                <div class="voice-wave"></div>
-                <div class="voice-wave"></div>
-                <span>Listening...</span>
-            </div>
-
-            <div class="error-message" id="errorMessage"></div>
-        </aside>
-
-        <main class="chat-main">
-            <div class="messages" id="messages">
-                <div class="empty-state">
-                    <div class="empty-icon">
-                        <i class="fas fa-comments"></i>
-                    </div>
-                    <div class="empty-title">Start a Conversation</div>
-                    <div class="empty-desc">Type a message or use voice input to chat with AI</div>
-                </div>
-            </div>
-
-            <div class="input-area">
-                <div class="input-wrapper">
-                    <div class="input-box">
-                        <button class="input-btn" id="voiceBtn" onclick="toggleVoiceInput()">
-                            <i class="fas fa-microphone"></i>
-                        </button>
-                        <textarea 
-                            id="messageInput" 
-                            placeholder="Type your message here..." 
-                            rows="1"
-                            onkeydown="handleKeyPress(event)"
-                        ></textarea>
-                    </div>
-                    <button class="send-btn" onclick="sendMessage()" id="sendBtn">
-                        <i class="fas fa-paper-plane"></i>
+                    <button class="control-btn chat-button" id="chatBtn" onclick="toggleChatView()">
+                        <i class="ri-message-3-fill"></i>
                     </button>
                 </div>
+                <div class="control-label" id="controlLabel">Start voice call</div>
             </div>
-        </main>
+        </div>
     </div>
 
     <script>
-        const API_BASE_URL = 'http://localhost:5000/api';
-        let currentMode = 'text';
-        let recognition = null;
-        let isRecording = false;
-        let currentAudio = null;
+        const API_URL = 'http://localhost:5000/api';
 
-        async function checkBackendConnection() {
-            try {
-                const response = await fetch(`${API_BASE_URL}/health`);
-                const data = await response.json();
-                
-                if (data.status === 'healthy') {
-                    document.getElementById('statusDot').classList.add('connected');
-                    document.getElementById('statusText').textContent = 'Connected';
-                }
-            } catch (error) {
-                console.error('Backend connection failed:', error);
-                document.getElementById('statusText').textContent = 'Disconnected';
-                showError('Cannot connect to backend. Make sure the Flask server is running on port 5000.');
-            }
-        }
+        let isCallActive = false;
+        let isChatView = false;
+        let recognition = null;
+        let synthesis = window.speechSynthesis;
+        let isAISpeaking = false;
+        let conversationStep = 0;
+        let userData = {
+            problem: '',
+            name: '',
+            phone: '',
+            estimatedTime: 60,
+            tokenNumber: null
+        };
+
+        const conversationFlow = [
+            "Hello! Welcome to QueuePilot. Please tell me your problem to book a token.",
+            "Thank you. Now, please tell me your full name.",
+            "Perfect! I have estimated the time for your token. You will be notified 1 hour before your turn. Your booking is complete!"
+        ];
 
         if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             recognition = new SpeechRecognition();
-            recognition.continuous = false;
+            recognition.continuous = true;
             recognition.interimResults = false;
             recognition.lang = 'en-US';
 
             recognition.onstart = () => {
-                isRecording = true;
-                document.getElementById('voiceBtn').classList.add('recording');
-                document.getElementById('voiceIndicator').classList.add('active');
+                updateCallStatus('Listening to you...', true);
+                document.getElementById('voiceVisualizer').classList.add('active');
             };
 
             recognition.onresult = (event) => {
-                const transcript = event.results[0][0].transcript;
-                document.getElementById('messageInput').value = transcript;
-                setTimeout(() => sendMessage(), 300);
+                const lastResultIndex = event.results.length - 1;
+                const transcript = event.results[lastResultIndex][0].transcript.trim();
+                
+                if (transcript) {
+                    handleUserInput(transcript);
+                }
             };
 
             recognition.onend = () => {
-                isRecording = false;
-                document.getElementById('voiceBtn').classList.remove('recording');
-                document.getElementById('voiceIndicator').classList.remove('active');
+                document.getElementById('voiceVisualizer').classList.remove('active');
+                if (isCallActive && !isAISpeaking) {
+                    setTimeout(() => {
+                        if (isCallActive) {
+                            recognition.start();
+                        }
+                    }, 500);
+                }
             };
 
             recognition.onerror = (event) => {
                 console.error('Speech recognition error:', event.error);
-                isRecording = false;
-                document.getElementById('voiceBtn').classList.remove('recording');
-                document.getElementById('voiceIndicator').classList.remove('active');
-                
                 if (event.error === 'not-allowed') {
-                    showError('Microphone access denied. Please allow microphone access and try again.');
+                    showNotification('Microphone access denied', 'error');
+                    isCallActive = false;
+                    updateUI();
                 }
             };
         }
 
-        function setMode(mode) {
-            currentMode = mode;
-            document.querySelectorAll('.mode-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            event.target.closest('.mode-btn').classList.add('active');
+        function toggleCall() {
+            isCallActive = !isCallActive;
             
-            if (mode === 'voice') {
-                showError('Voice mode enabled! AI responses will be spoken aloud.');
+            if (isCallActive) {
+                startCall();
+            } else {
+                endCall();
             }
+            
+            updateUI();
         }
 
-        function toggleVoiceInput() {
+        function startCall() {
             if (!recognition) {
-                showError('Speech recognition is not supported in your browser. Please use Chrome or Edge.');
+                showNotification('Speech recognition not supported in your browser', 'error');
+                isCallActive = false;
                 return;
             }
 
-            if (isRecording) {
+            conversationStep = 0;
+            userData = {
+                problem: '',
+                name: '',
+                phone: '',
+                estimatedTime: 60,
+                tokenNumber: generateTokenNumber()
+            };
+
+            updateCallStatus('Call connected', true);
+            recognition.start();
+            
+            setTimeout(() => {
+                speakAI(conversationFlow[0]);
+                if (isChatView) {
+                    addChatMessage(conversationFlow[0], 'ai');
+                }
+            }, 1000);
+        }
+
+        function endCall() {
+            if (recognition) {
                 recognition.stop();
+            }
+            if (synthesis) {
+                synthesis.cancel();
+            }
+            updateCallStatus('Call ended', false);
+            document.getElementById('callInfo').textContent = 'Call ended';
+            isAISpeaking = false;
+            document.getElementById('voiceVisualizer').classList.remove('active');
+        }
+
+        function toggleChatView() {
+            isChatView = !isChatView;
+            
+            const chatView = document.getElementById('chatView');
+            const avatarView = document.getElementById('avatarView');
+            const chatBtn = document.getElementById('chatBtn');
+            const controlLabel = document.getElementById('controlLabel');
+            
+            if (isChatView) {
+                chatView.classList.add('active');
+                avatarView.style.display = 'none';
+                chatBtn.classList.add('active');
+                controlLabel.textContent = 'Chat view active';
             } else {
-                recognition.start();
+                chatView.classList.remove('active');
+                avatarView.style.display = 'flex';
+                chatBtn.classList.remove('active');
+                controlLabel.textContent = isCallActive ? 'Call in progress' : 'Start voice call';
             }
         }
 
-        function handleKeyPress(event) {
-            if (event.key === 'Enter' && !event.shiftKey) {
-                event.preventDefault();
-                sendMessage();
-            }
-        }
-
-        async function playTextToSpeech(text, button) {
-            try {
-                if (currentAudio) {
-                    currentAudio.pause();
-                    currentAudio = null;
-                    if (button) {
-                        button.classList.remove('playing');
-                        button.innerHTML = '<i class="fas fa-volume-up"></i> Speak';
-                    }
-                    return;
-                }
-
-                if (button) {
-                    button.classList.add('playing');
-                    button.innerHTML = '<i class="fas fa-stop"></i> Stop';
-                }
-
-                const response = await fetch(`${API_BASE_URL}/text-to-speech`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ text: text })
-                });
-
-                if (!response.ok) {
-                    throw new Error('TTS request failed');
-                }
-
-                const audioBlob = await response.blob();
-                const audioUrl = URL.createObjectURL(audioBlob);
-                
-                currentAudio = new Audio(audioUrl);
-                
-                currentAudio.onended = () => {
-                    currentAudio = null;
-                    if (button) {
-                        button.classList.remove('playing');
-                        button.innerHTML = '<i class="fas fa-volume-up"></i> Speak';
-                    }
-                };
-                
-                await currentAudio.play();
-
-            } catch (error) {
-                console.error('Text-to-speech error:', error);
-                showError('Voice output failed. Check backend connection.');
-                if (button) {
-                    button.classList.remove('playing');
-                    button.innerHTML = '<i class="fas fa-volume-up"></i> Speak';
-                }
-            }
-        }
-
-        async function sendMessage() {
-            const input = document.getElementById('messageInput');
-            const message = input.value.trim();
+        function handleUserInput(input) {
+            recognition.stop();
             
-            if (!message) return;
+            if (isChatView) {
+                addChatMessage(input, 'user');
+            }
 
-            input.value = '';
-            input.style.height = 'auto';
+            document.getElementById('callInfo').textContent = 'Processing...';
 
-            const emptyState = document.querySelector('.empty-state');
-            if (emptyState) emptyState.remove();
-
-            addMessage(message, 'user');
-
-            const typingId = addTypingIndicator();
-
-            document.getElementById('sendBtn').disabled = true;
-
-            try {
-                const response = await fetch(`${API_BASE_URL}/chat`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ message: message })
-                });
-
-                const data = await response.json();
-                
-                removeTypingIndicator(typingId);
-
-                if (data.status === 'success' && data.response) {
-                    addMessage(data.response, 'bot');
+            if (conversationStep === 0) {
+                userData.problem = input;
+                conversationStep = 1;
+                setTimeout(() => {
+                    speakAI(conversationFlow[1]);
+                    if (isChatView) {
+                        addChatMessage(conversationFlow[1], 'ai');
+                    }
+                }, 500);
+            } else if (conversationStep === 1) {
+                userData.name = input;
+                conversationStep = 2;
+                setTimeout(async () => {
+                    const finalMessage = conversationFlow[2];
+                    speakAI(finalMessage);
+                    if (isChatView) {
+                        addChatMessage(finalMessage, 'ai');
+                    }
                     
-                    if (currentMode === 'voice') {
-                        await playTextToSpeech(data.response, null);
-                    }
-                } else {
-                    throw new Error(data.error || 'Unknown error');
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                removeTypingIndicator(typingId);
-                addMessage('Sorry, there was an error processing your request. Please make sure the backend server is running.', 'bot');
-                showError(error.message);
-            } finally {
-                document.getElementById('sendBtn').disabled = false;
+                    await saveToDatabase();
+                    
+                    setTimeout(() => {
+                        showNotification('Token booked successfully!', 'success');
+                        endCall();
+                        isCallActive = false;
+                        updateUI();
+                    }, 3000);
+                }, 500);
             }
         }
 
-        function addMessage(text, type) {
-            const messagesDiv = document.getElementById('messages');
+        function speakAI(text) {
+            return new Promise((resolve) => {
+                isAISpeaking = true;
+                updateCallStatus('AI is speaking...', true);
+                document.getElementById('callInfo').textContent = text;
+                document.getElementById('avatarCircle').classList.add('speaking');
+
+                if (synthesis) {
+                    synthesis.cancel();
+                    
+                    const utterance = new SpeechSynthesisUtterance(text);
+                    utterance.rate = 1.0;
+                    utterance.pitch = 1.0;
+                    utterance.volume = 1.0;
+                    
+                    utterance.onend = () => {
+                        isAISpeaking = false;
+                        document.getElementById('avatarCircle').classList.remove('speaking');
+                        if (isCallActive) {
+                            updateCallStatus('Listening to you...', true);
+                            setTimeout(() => {
+                                if (isCallActive) {
+                                    recognition.start();
+                                }
+                            }, 500);
+                        }
+                        resolve();
+                    };
+                    
+                    utterance.onerror = () => {
+                        isAISpeaking = false;
+                        document.getElementById('avatarCircle').classList.remove('speaking');
+                        resolve();
+                    };
+                    
+                    synthesis.speak(utterance);
+                } else {
+                    isAISpeaking = false;
+                    document.getElementById('avatarCircle').classList.remove('speaking');
+                    resolve();
+                }
+            });
+        }
+
+        function addChatMessage(text, type) {
+            const chatView = document.getElementById('chatView');
             const messageDiv = document.createElement('div');
-            messageDiv.className = `message ${type}`;
+            messageDiv.className = `chat-message ${type}`;
             
-            const avatar = document.createElement('div');
-            avatar.className = `message-avatar ${type}-avatar`;
-            avatar.innerHTML = type === 'user' ? '<i class="fas fa-user"></i>' : '<i class="fas fa-robot"></i>';
-            
-            const content = document.createElement('div');
-            content.className = 'message-content';
-            
-            const textDiv = document.createElement('div');
-            textDiv.className = 'message-text';
-            textDiv.textContent = text;
+            const bubble = document.createElement('div');
+            bubble.className = 'message-bubble';
+            bubble.textContent = text;
             
             const time = document.createElement('div');
             time.className = 'message-time';
             time.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             
-            content.appendChild(textDiv);
-            
-            if (type === 'bot') {
-                const actions = document.createElement('div');
-                actions.className = 'message-actions';
-                
-                const speakBtn = document.createElement('button');
-                speakBtn.className = 'action-btn';
-                speakBtn.innerHTML = '<i class="fas fa-volume-up"></i> Speak';
-                speakBtn.onclick = function() { playTextToSpeech(text, this); };
-                
-                actions.appendChild(speakBtn);
-                content.appendChild(actions);
-            }
-            
-            content.appendChild(time);
-            messageDiv.appendChild(avatar);
-            messageDiv.appendChild(content);
-            
-            messagesDiv.appendChild(messageDiv);
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            messageDiv.appendChild(bubble);
+            messageDiv.appendChild(time);
+            chatView.appendChild(messageDiv);
+            chatView.scrollTop = chatView.scrollHeight;
         }
 
-        function addTypingIndicator() {
-            const messagesDiv = document.getElementById('messages');
-            const messageDiv = document.createElement('div');
-            messageDiv.className = 'message bot';
-            messageDiv.id = 'typing-indicator';
-            
-            const avatar = document.createElement('div');
-            avatar.className = 'message-avatar bot-avatar';
-            avatar.innerHTML = '<i class="fas fa-robot"></i>';
-            
-            const content = document.createElement('div');
-            content.className = 'message-content';
-            
-            const typing = document.createElement('div');
-            typing.className = 'message-text typing-indicator';
-            typing.innerHTML = '<div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>';
-            
-            content.appendChild(typing);
-            messageDiv.appendChild(avatar);
-            messageDiv.appendChild(content);
-            
-            messagesDiv.appendChild(messageDiv);
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
-            
-            return 'typing-indicator';
-        }
+        async function saveToDatabase() {
+            try {
+                const bookingData = {
+                    tokenNumber: userData.tokenNumber,
+                    customerName: userData.name,
+                    problem: userData.problem,
+                    phone: userData.phone || 'N/A',
+                    estimatedTime: userData.estimatedTime,
+                    notificationTime: new Date(Date.now() + (userData.estimatedTime - 60) * 60000).toISOString(),
+                    status: 'waiting',
+                    createdAt: new Date().toISOString()
+                };
 
-        function removeTypingIndicator(id) {
-            const indicator = document.getElementById(id);
-            if (indicator) indicator.remove();
-        }
+                const response = await fetch(`${API_URL}/bookings`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(bookingData)
+                });
 
-        function clearChat() {
-            const messagesDiv = document.getElementById('messages');
-            messagesDiv.innerHTML = `
-                <div class="empty-state">
-                    <div class="empty-icon">
-                        <i class="fas fa-comments"></i>
-                    </div>
-                    <div class="empty-title">Start a Conversation</div>
-                    <div class="empty-desc">Type a message or use voice input to chat with AI</div>
-                </div>
-            `;
-            
-            if (currentAudio) {
-                currentAudio.pause();
-                currentAudio = null;
+                if (response.ok) {
+                    console.log('Booking saved successfully');
+                } else {
+                    console.error('Failed to save booking');
+                }
+            } catch (error) {
+                console.error('Error saving to database:', error);
             }
         }
 
-        function showError(message) {
-            const errorDiv = document.getElementById('errorMessage');
-            errorDiv.textContent = message;
-            errorDiv.classList.add('show');
+        function generateTokenNumber() {
+            return `Q-${Date.now().toString().slice(-6)}`;
+        }
+
+        function updateCallStatus(text, isActive) {
+            const statusEl = document.getElementById('callStatusText');
+            const statusContainer = document.getElementById('callStatus');
+            const statusDot = statusContainer.querySelector('.status-dot');
+            
+            statusEl.textContent = text;
+            
+            if (isActive) {
+                statusContainer.classList.add('active');
+                statusDot.classList.add('active');
+            } else {
+                statusContainer.classList.remove('active');
+                statusDot.classList.remove('active');
+            }
+        }
+
+        function updateUI() {
+            const callBtn = document.getElementById('callBtn');
+            const callIcon = callBtn.querySelector('i');
+            const controlLabel = document.getElementById('controlLabel');
+            
+            if (isCallActive) {
+                callBtn.classList.add('active');
+                callIcon.className = 'ri-phone-off-fill';
+                controlLabel.textContent = 'End call';
+            } else {
+                callBtn.classList.remove('active');
+                callIcon.className = 'ri-phone-fill';
+                controlLabel.textContent = 'Start voice call';
+                updateCallStatus('Tap to start call', false);
+                document.getElementById('callInfo').textContent = 'Ready to help you book a token';
+            }
+        }
+
+        function showNotification(message, type = 'success') {
+            const notif = document.getElementById('notification');
+            const title = document.getElementById('notifTitle');
+            const msg = document.getElementById('notifMessage');
+            const icon = notif.querySelector('.notif-icon i');
+            
+            notif.className = `notification-toast show ${type}`;
+            title.textContent = type === 'success' ? 'Success' : 'Error';
+            msg.textContent = message;
+            icon.className = type === 'success' ? 'ri-check-line' : 'ri-error-warning-line';
             
             setTimeout(() => {
-                errorDiv.classList.remove('show');
-            }, 5000);
+                notif.classList.remove('show');
+            }, 4000);
         }
 
-        document.getElementById('messageInput').addEventListener('input', function() {
-            this.style.height = 'auto';
-            this.style.height = Math.min(this.scrollHeight, 120) + 'px';
-        });
+        function updateTime() {
+            const now = new Date();
+            const hours = now.getHours().toString().padStart(2, '0');
+            const minutes = now.getMinutes().toString().padStart(2, '0');
+            document.getElementById('currentTime').textContent = `${hours}:${minutes}`;
+        }
 
         window.addEventListener('load', () => {
-            checkBackendConnection();
+            updateTime();
+            setInterval(updateTime, 60000);
+        });
+
+        window.addEventListener('beforeunload', () => {
+            if (recognition) {
+                recognition.stop();
+            }
+            if (synthesis) {
+                synthesis.cancel();
+            }
         });
     </script>
 </body>
