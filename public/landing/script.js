@@ -25,38 +25,107 @@ const reviewDots = document.getElementById('reviewDots');
 const paymentModal = document.getElementById('paymentModal');
 const verificationModal = document.getElementById('verificationModal');
 
-function initializeApp() {
-    loadUserFromMemory();
-    loadReviewsFromMemory();
-    initializeGoogleSignIn();
-    setupEventListeners();
-    startReviewRotation();
-    animateStats();
-    loadPurchasedPlan();
-    loadRegisteredFaces();
+// Firestore helper functions
+async function saveToFirestore(collectionName, docId, data) {
+    try {
+        const { collection, doc, setDoc } = window.firestoreFunctions;
+        const docRef = doc(window.db, collectionName, docId);
+        await setDoc(docRef, data, { merge: true });
+        console.log(`Data saved to ${collectionName}/${docId}`);
+        return true;
+    } catch (error) {
+        console.error('Error saving to Firestore:', error);
+        return false;
+    }
 }
 
-function loadPurchasedPlan() {
-    const purchased = localStorage.getItem('queuepilot_purchased_plan');
-    if (purchased) {
-        try {
-            const planData = JSON.parse(purchased);
-            updatePricingButtons(planData.plan);
-        } catch (e) {
-            console.error('Error loading purchased plan:', e);
+async function getFromFirestore(collectionName, docId) {
+    try {
+        const { doc, getDoc } = window.firestoreFunctions;
+        const docRef = doc(window.db, collectionName, docId);
+        const docSnap = await getDoc(docRef);
+        
+        if (docSnap.exists()) {
+            return docSnap.data();
+        } else {
+            return null;
         }
+    } catch (error) {
+        console.error('Error reading from Firestore:', error);
+        return null;
     }
 }
 
-function loadRegisteredFaces() {
-    const saved = localStorage.getItem('queuepilot_faces');
-    if (saved) {
-        registeredFaces = JSON.parse(saved);
+async function getAllFromCollection(collectionName) {
+    try {
+        const { collection, getDocs } = window.firestoreFunctions;
+        const querySnapshot = await getDocs(collection(window.db, collectionName));
+        const items = [];
+        querySnapshot.forEach((doc) => {
+            items.push({ id: doc.id, ...doc.data() });
+        });
+        return items;
+    } catch (error) {
+        console.error('Error getting collection:', error);
+        return [];
     }
 }
 
-function saveRegisteredFaces() {
-    localStorage.setItem('queuepilot_faces', JSON.stringify(registeredFaces));
+async function deleteFromFirestore(collectionName, docId) {
+    try {
+        const { doc, deleteDoc } = window.firestoreFunctions;
+        const docRef = doc(window.db, collectionName, docId);
+        await deleteDoc(docRef);
+        console.log(`Document ${docId} deleted from ${collectionName}`);
+        return true;
+    } catch (error) {
+        console.error('Error deleting from Firestore:', error);
+        return false;
+    }
+}
+
+function initializeApp() {
+    // Wait for Firebase to be initialized
+    const checkFirebase = setInterval(() => {
+        if (window.db && window.firestoreFunctions) {
+            clearInterval(checkFirebase);
+            loadUserFromFirestore();
+            loadReviewsFromFirestore();
+            initializeGoogleSignIn();
+            setupEventListeners();
+            startReviewRotation();
+            animateStats();
+            loadPurchasedPlan();
+            loadRegisteredFaces();
+        }
+    }, 100);
+}
+
+async function loadPurchasedPlan() {
+    if (!currentUser) return;
+    
+    const planData = await getFromFirestore('plans', currentUser.email);
+    if (planData) {
+        updatePricingButtons(planData.plan);
+    }
+}
+
+async function loadRegisteredFaces() {
+    if (!currentUser) return;
+    
+    const facesData = await getFromFirestore('faces', currentUser.email);
+    if (facesData && facesData.faces) {
+        registeredFaces = facesData.faces;
+    }
+}
+
+async function saveRegisteredFaces() {
+    if (!currentUser) return;
+    
+    await saveToFirestore('faces', currentUser.email, {
+        faces: registeredFaces,
+        updatedAt: new Date().toISOString()
+    });
 }
 
 function updatePricingButtons(currentPlan) {
@@ -87,13 +156,16 @@ function updatePricingButtons(currentPlan) {
     });
 }
 
-function openPaymentModal(plan, price, faceLimit) {
-    const purchased = localStorage.getItem('queuepilot_purchased_plan');
-    if (purchased) {
-        const planData = JSON.parse(purchased);
-        if (planData.plan === plan) {
-            return;
-        }
+async function openPaymentModal(plan, price, faceLimit) {
+    if (!currentUser) {
+        alert('Please login first to purchase a plan');
+        loginModal.classList.add('active');
+        return;
+    }
+
+    const planData = await getFromFirestore('plans', currentUser.email);
+    if (planData && planData.plan === plan) {
+        return;
     }
 
     selectedPlan = plan;
@@ -112,7 +184,7 @@ function closePaymentModal() {
     document.getElementById('otherCompanyGroup').classList.remove('show');
 }
 
-function processPayment(method) {
+async function processPayment(method) {
     const form = document.getElementById('paymentForm');
     if (!form) {
         console.error('Form not found');
@@ -137,6 +209,21 @@ function processPayment(method) {
     }
 
     console.log('Processing payment with', method);
+
+    // Save payment info to Firestore
+    const paymentData = {
+        customerName,
+        panNumber,
+        companyType,
+        companySize,
+        paymentMethod: method,
+        plan: selectedPlan,
+        price: selectedPrice,
+        timestamp: new Date().toISOString(),
+        userEmail: currentUser.email
+    };
+    
+    await saveToFirestore('payments', `${currentUser.email}_${Date.now()}`, paymentData);
 
     const paymentFormArea = document.getElementById('paymentFormArea');
     paymentFormArea.innerHTML = `
@@ -220,7 +307,7 @@ function stopCamera() {
     }
 }
 
-function captureAndSaveFace() {
+async function captureAndSaveFace() {
     const video = document.getElementById('cameraFeed');
     const canvas = document.getElementById('cameraCanvas');
     
@@ -240,7 +327,8 @@ function captureAndSaveFace() {
         image: faceImage,
         timestamp: new Date().toISOString()
     });
-    saveRegisteredFaces();
+    
+    await saveRegisteredFaces();
     
     stopCamera();
     showVerificationSuccess();
@@ -348,10 +436,10 @@ function showVerificationSuccess() {
     `;
 }
 
-function removeFace(faceId) {
+async function removeFace(faceId) {
     if (confirm('Are you sure you want to remove this Face ID?')) {
         registeredFaces = registeredFaces.filter(face => face.id !== faceId);
-        saveRegisteredFaces();
+        await saveRegisteredFaces();
         showVerificationSuccess();
     }
 }
@@ -404,16 +492,17 @@ function addAnotherFace() {
     }, 3000);
 }
 
-function goToDashboard() {
+async function goToDashboard() {
     const planData = {
         plan: selectedPlan,
         price: selectedPrice,
         maxFaceIds: maxFaceIds,
-        purchaseDate: new Date().toISOString()
+        purchaseDate: new Date().toISOString(),
+        userEmail: currentUser.email
     };
     
     try {
-        localStorage.setItem('queuepilot_purchased_plan', JSON.stringify(planData));
+        await saveToFirestore('plans', currentUser.email, planData);
         console.log('Plan saved:', planData);
         
         verificationModal.classList.remove('active');
@@ -500,62 +589,92 @@ function animateNumber(element, target) {
     }, 30);
 }
 
-function loadUserFromMemory() {
-    const savedUser = localStorage.getItem('queuepilot_user');
-    if (savedUser) {
-        const user = JSON.parse(savedUser);
+async function loadUserFromFirestore() {
+    // Check session storage for current session
+    const sessionUser = sessionStorage.getItem('queuepilot_session_user');
+    if (sessionUser) {
+        const user = JSON.parse(sessionUser);
         currentUser = user;
         userIcon.style.display = 'none';
         userProfile.style.display = 'block';
         userAvatar.src = user.avatar;
         userName.textContent = user.name;
         updateReviewForm();
+        
+        // Load user's additional data
+        await loadPurchasedPlan();
+        await loadRegisteredFaces();
     }
 }
 
-function saveUserToMemory(user) {
-    localStorage.setItem('queuepilot_user', JSON.stringify(user));
+async function saveUserToFirestore(user) {
+    // Save to Firestore
+    await saveToFirestore('users', user.email, {
+        name: user.name,
+        email: user.email,
+        avatar: user.avatar,
+        type: user.type,
+        lastLogin: new Date().toISOString()
+    });
+    
+    // Also save to session storage for current session
+    sessionStorage.setItem('queuepilot_session_user', JSON.stringify(user));
 }
 
-function loadReviewsFromMemory() {
-    const savedReviews = localStorage.getItem('queuepilot_reviews');
-    if (savedReviews) {
-        allReviews = JSON.parse(savedReviews);
+async function loadReviewsFromFirestore() {
+    const reviews = await getAllFromCollection('reviews');
+    
+    if (reviews.length > 0) {
+        allReviews = reviews.sort((a, b) => 
+            new Date(b.timestamp || 0) - new Date(a.timestamp || 0)
+        );
     } else {
+        // Default reviews if none exist
         allReviews = [
             {
                 name: "Dr. Amish Lamsal",
                 avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Amish",
-                text: "QueuePilot transformed our hospital operations. Patient wait times reduced by 60% and satisfaction scores increased dramatically. The token system is intuitive and the help desk support is excellent."
+                text: "QueuePilot transformed our hospital operations. Patient wait times reduced by 60% and satisfaction scores increased dramatically. The token system is intuitive and the help desk support is excellent.",
+                timestamp: new Date().toISOString()
             },
             {
                 name: "Mison Khatiwada",
                 avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Mison",
-                text: "Outstanding queue management solution! Our bank branches now handle 3x more customers efficiently. The AI-powered notifications keep customers informed and happy. Best investment we made this year."
+                text: "Outstanding queue management solution! Our bank branches now handle 3x more customers efficiently. The AI-powered notifications keep customers informed and happy. Best investment we made this year.",
+                timestamp: new Date().toISOString()
             },
             {
                 name: "Rajesh Shrestha",
                 avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Rajesh",
-                text: "Perfect for our government office. Citizens love the digital token system - no more physical lines or confusion. The analytics help us optimize staffing. Integration was seamless and support is responsive."
+                text: "Perfect for our government office. Citizens love the digital token system - no more physical lines or confusion. The analytics help us optimize staffing. Integration was seamless and support is responsive.",
+                timestamp: new Date().toISOString()
             },
             {
                 name: "Priya Maharjan",
                 avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Priya",
-                text: "Game changer for our clinic network. The multi-counter management and real-time updates are exactly what we needed. Patients can track their position from anywhere. Highly recommend for healthcare facilities."
+                text: "Game changer for our clinic network. The multi-counter management and real-time updates are exactly what we needed. Patients can track their position from anywhere. Highly recommend for healthcare facilities.",
+                timestamp: new Date().toISOString()
             },
             {
                 name: "Sandip Gurung",
                 avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Sandip",
-                text: "Exceptional technology and customer service. The token-based system eliminated crowding at our service centers. The help desk feature resolved our customer support challenges completely. Absolutely worth every rupee!"
+                text: "Exceptional technology and customer service. The token-based system eliminated crowding at our service centers. The help desk feature resolved our customer support challenges completely. Absolutely worth every rupee!",
+                timestamp: new Date().toISOString()
             }
         ];
-        saveReviewsToMemory();
+        
+        // Save default reviews to Firestore
+        for (let i = 0; i < allReviews.length; i++) {
+            await saveToFirestore('reviews', `review_${Date.now()}_${i}`, allReviews[i]);
+        }
     }
+    
     renderReviews();
 }
 
-function saveReviewsToMemory() {
-    localStorage.setItem('queuepilot_reviews', JSON.stringify(allReviews));
+async function saveReviewToFirestore(review) {
+    const reviewId = `review_${Date.now()}`;
+    await saveToFirestore('reviews', reviewId, review);
 }
 
 function renderReviews() {
@@ -601,7 +720,7 @@ function initializeGoogleSignIn() {
     );
 }
 
-function handleGoogleSignIn(response) {
+async function handleGoogleSignIn(response) {
     const credential = response.credential;
     const payload = JSON.parse(atob(credential.split('.')[1]));
     
@@ -612,7 +731,7 @@ function handleGoogleSignIn(response) {
         type: 'google'
     };
     
-    loginUser(user);
+    await loginUser(user);
 }
 
 function setupEventListeners() {
@@ -660,7 +779,7 @@ function setupEventListeners() {
     });
 }
 
-function handleEmailLogin() {
+async function handleEmailLogin() {
     const email = emailInput.value.trim();
     if (email && email.includes('@')) {
         const name = email.split('@')[0];
@@ -670,27 +789,31 @@ function handleEmailLogin() {
             avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}`,
             type: 'email'
         };
-        loginUser(user);
+        await loginUser(user);
         emailInput.value = '';
     } else {
         alert('Please enter a valid email address');
     }
 }
 
-function loginUser(user) {
+async function loginUser(user) {
     currentUser = user;
-    saveUserToMemory(user);
+    await saveUserToFirestore(user);
     userIcon.style.display = 'none';
     userProfile.style.display = 'block';
     userAvatar.src = user.avatar;
     userName.textContent = user.name;
     loginModal.classList.remove('active');
     updateReviewForm();
+    
+    // Load user's data
+    await loadPurchasedPlan();
+    await loadRegisteredFaces();
 }
 
 function handleLogout() {
     currentUser = null;
-    localStorage.removeItem('queuepilot_user');
+    sessionStorage.removeItem('queuepilot_session_user');
     userIcon.style.display = 'flex';
     userProfile.style.display = 'none';
     userDropdown.classList.remove('active');
@@ -724,7 +847,7 @@ function updateReviewForm() {
     }
 }
 
-function handleReviewSubmit(e) {
+async function handleReviewSubmit(e) {
     e.preventDefault();
     
     const text = document.getElementById('reviewText').value.trim();
@@ -733,11 +856,13 @@ function handleReviewSubmit(e) {
         const newReview = {
             name: currentUser.name,
             avatar: currentUser.avatar,
-            text: text
+            text: text,
+            timestamp: new Date().toISOString(),
+            userEmail: currentUser.email
         };
         
+        await saveReviewToFirestore(newReview);
         allReviews.unshift(newReview);
-        saveReviewsToMemory();
         renderReviews();
         showReview(0);
         stopReviewRotation();

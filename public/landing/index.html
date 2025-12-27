@@ -1,27 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>QueuePilot - AI Queue Management Solutions</title>
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
     <script src="https://accounts.google.com/gsi/client" async defer></script>
-
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
     <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
     <header>
         <div class="logo">
             <img src="images/logo.png" alt="QueuePilot Logo">
             <div class="logo-text">
-                <span class="logo-queue">Queue</span><span class="logo-pilot">Pilot</span><span
-                    class="logo-dot">.</span>
+                <span class="logo-queue">Queue</span><span class="logo-pilot">Pilot</span><span class="logo-dot">.</span>
             </div>
         </div>
         <nav>
@@ -52,11 +44,11 @@
             </button>
             <div class="login-header">Welcome back</div>
             <div class="login-subtitle">Sign in to continue to QueuePilot</div>
-
+            
             <div id="googleSignInDiv"></div>
-
+            
             <div class="divider">or</div>
-
+            
             <input type="email" class="login-input" id="emailInput" placeholder="Enter your email">
             <button class="login-btn primary" id="emailLoginBtn">Continue with Email</button>
         </div>
@@ -66,8 +58,7 @@
         <div class="hero-content">
             <div class="hero-badge">AI-POWERED QUEUE MANAGEMENT</div>
             <h1>Smart Queue Management with Digital Tokens</h1>
-            <p>Eliminate waiting lines with intelligent token-based queue systems. Manage appointments, reduce wait
-                times, and enhance customer experience with AI-powered scheduling and help desk support.</p>
+            <p>Eliminate waiting lines with intelligent token-based queue systems. Manage appointments, reduce wait times, and enhance customer experience with AI-powered scheduling and help desk support.</p>
             <div class="cta-buttons">
                 <button class="btn btn-primary">
                     Get Started
@@ -121,11 +112,8 @@
         <div class="about-content">
             <div class="section-label">About Us</div>
             <h2>Revolutionizing Queue Management with AI</h2>
-            <p>We provide innovative AI-powered queue management solutions that eliminate waiting lines through digital
-                token systems. Our platform serves hospitals, banks, government offices, and businesses with smart
-                scheduling and customer support.</p>
-            <p>Our integrated system combines token-based queuing, automated notifications, help desk support, and
-                customer service features to streamline operations and deliver exceptional customer experiences.</p>
+            <p>We provide innovative AI-powered queue management solutions that eliminate waiting lines through digital token systems. Our platform serves hospitals, banks, government offices, and businesses with smart scheduling and customer support.</p>
+            <p>Our integrated system combines token-based queuing, automated notifications, help desk support, and customer service features to streamline operations and deliver exceptional customer experiences.</p>
         </div>
         <div class="about-image">
             <img src="images/about.png" alt="About Us">
@@ -138,7 +126,7 @@
             <h2>Choose Your Perfect Plan</h2>
             <p>Select the package that best fits your business needs and budget</p>
         </div>
-
+        
         <div class="pricing-grid">
             <div class="pricing-card">
                 <div class="pricing-name">Basic</div>
@@ -154,7 +142,7 @@
                 </ul>
                 <button class="pricing-btn" onclick="openPaymentModal('Basic', 4999, 3)">Get Started</button>
             </div>
-
+            
             <div class="pricing-card featured">
                 <div class="pricing-badge">Most Popular</div>
                 <div class="pricing-name">Standard</div>
@@ -171,7 +159,7 @@
                 </ul>
                 <button class="pricing-btn" onclick="openPaymentModal('Standard', 9999, 10)">Get Started</button>
             </div>
-
+            
             <div class="pricing-card">
                 <div class="pricing-name">Ultimate</div>
                 <div class="pricing-price">Rs 14,999<span>/month</span></div>
@@ -197,7 +185,7 @@
             <h2>What Our Clients Say</h2>
             <p>Discover how we've helped businesses transform their queue management</p>
         </div>
-
+        
         <div class="reviews-container">
             <div class="reviews-carousel">
                 <div class="review-slider" id="reviewsSlider">
@@ -209,7 +197,7 @@
             <div class="review-form-container">
                 <h3>Share Your Experience</h3>
                 <p class="review-form-subtitle">Help others by sharing your thoughts</p>
-
+                
                 <div id="reviewFormArea">
                     <div class="login-required">
                         <i class="ri-lock-line"></i>
@@ -224,8 +212,7 @@
     <section class="map-section">
         <div class="section-label">Global Reach</div>
         <h2>Serving Businesses Worldwide</h2>
-        <p>Our innovative queue management solutions help organizations across the globe deliver exceptional customer
-            experiences</p>
+        <p>Our innovative queue management solutions help organizations across the globe deliver exceptional customer experiences</p>
         <div class="map-image">
             <img src="images/global.png" alt="Global Presence">
         </div>
@@ -236,8 +223,7 @@
             <div class="footer-logo">
                 <img src="images/logo.png" alt="QueuePilot Logo">
                 <div class="logo-text">
-                    <span class="logo-queue">Queue</span><span class="logo-pilot">Pilot</span><span
-                        class="logo-dot">.</span>
+                    <span class="logo-queue">Queue</span><span class="logo-pilot">Pilot</span><span class="logo-dot">.</span>
                 </div>
             </div>
             <div class="footer-links">
@@ -276,8 +262,7 @@
                                 <i class="ri-user-line"></i>
                                 Full Name
                             </label>
-                            <input type="text" class="form-input" id="customerName" placeholder="Enter your full name"
-                                required>
+                            <input type="text" class="form-input" id="customerName" placeholder="Enter your full name" required>
                         </div>
 
                         <div class="form-group">
@@ -285,8 +270,7 @@
                                 <i class="ri-lock-password-line"></i>
                                 Mobile PIN (MPIN)
                             </label>
-                            <input type="password" class="form-input" id="mpin" placeholder="Enter your 4-digit MPIN"
-                                maxlength="4" required>
+                            <input type="password" class="form-input" id="mpin" placeholder="Enter your 4-digit MPIN" maxlength="4" required>
                         </div>
 
                         <div class="form-group">
@@ -294,8 +278,7 @@
                                 <i class="ri-bank-card-line"></i>
                                 Company PAN Number
                             </label>
-                            <input type="text" class="form-input" id="panNumber" placeholder="Enter PAN Number"
-                                required>
+                            <input type="text" class="form-input" id="panNumber" placeholder="Enter PAN Number" required>
                         </div>
 
                         <div class="form-group">
@@ -323,8 +306,7 @@
                                 <i class="ri-file-text-line"></i>
                                 Company Details
                             </label>
-                            <input type="text" class="form-input" id="otherCompanyDetails"
-                                placeholder="Enter your company details">
+                            <input type="text" class="form-input" id="otherCompanyDetails" placeholder="Enter your company details">
                         </div>
 
                         <div class="form-group">
@@ -366,13 +348,11 @@
                             <div class="payment-methods-title">Choose Payment Method</div>
                             <div class="payment-methods">
                                 <button type="button" class="payment-method-btn" onclick="processPayment('eSewa')">
-                                    <img src="https://play-lh.googleusercontent.com/MRzMmiJAe0-xaEkDKB0MKwv1a3kjDieSfNuaIlRe3zA39M00qNl_bT4WGLfvhnEqbH8"
-                                        alt="eSewa">
+                                    <img src="https://play-lh.googleusercontent.com/MRzMmiJAe0-xaEkDKB0MKwv1a3kjDieSfNuaIlRe3zA39M00qNl_bT4WGLfvhnEqbH8" alt="eSewa">
                                     <span>Pay with eSewa</span>
                                 </button>
                                 <button type="button" class="payment-method-btn" onclick="processPayment('Khalti')">
-                                    <img src="https://play-lh.googleusercontent.com/Xh_OlrdkF1UnGCnMN__4z-yXffBAEl0eUDeVDPr4UthOxiz1iei1tkrkACw9TAntejo"
-                                        alt="Khalti">
+                                    <img src="https://play-lh.googleusercontent.com/Xh_OlrdkF1UnGCnMN__4z-yXffBAEl0eUDeVDPr4UthOxiz1iei1tkrkACw9TAntejo" alt="Khalti">
                                     <span>Pay with Khalti</span>
                                 </button>
                             </div>
@@ -387,9 +367,8 @@
         <div class="verification-content">
             <div id="verificationArea">
                 <h2 style="font-size: 28px; font-weight: 600; margin-bottom: 16px;">Face Verification</h2>
-                <p style="color: #6b7280; margin-bottom: 32px;">Please follow the instructions to verify your identity
-                </p>
-
+                <p style="color: #6b7280; margin-bottom: 32px;">Please follow the instructions to verify your identity</p>
+                
                 <div class="camera-container">
                     <video id="cameraFeed" class="camera-feed" autoplay playsinline></video>
                     <canvas id="cameraCanvas" style="display: none;"></canvas>
@@ -397,7 +376,7 @@
                 </div>
 
                 <div class="verification-instruction" id="verificationInstruction">Look straight ahead</div>
-
+                
                 <div class="verification-steps">
                     <div class="verification-step active" id="step1"></div>
                     <div class="verification-step" id="step2"></div>
@@ -407,8 +386,29 @@
         </div>
     </div>
 
-    <script src="firebase-config.js"></script>
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getFirestore, collection, doc, setDoc, getDoc, getDocs, deleteDoc, query, where } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyDlDu3x6_UTE9SHHAn0quWN30IVPBiegyU",
+            authDomain: "callcare-428c3.firebaseapp.com",
+            projectId: "callcare-428c3",
+            storageBucket: "callcare-428c3.firebasestorage.app",
+            messagingSenderId: "827277116710",
+            appId: "1:827277116710:web:e41c882a929b2e6f3cade7"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Make Firebase available globally
+        window.db = db;
+        window.firestoreFunctions = { collection, doc, setDoc, getDoc, getDocs, deleteDoc, query, where };
+    </script>
     <script src="script.js"></script>
 </body>
-
 </html>
