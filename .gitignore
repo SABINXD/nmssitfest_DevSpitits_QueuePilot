@@ -16,3 +16,6 @@ Thumbs.db
 
 dist/
 build/
+
+
+backend-py/.env
