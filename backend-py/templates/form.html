@@ -1,0 +1,1048 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QueuePilot Call - Token Registration</title>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif;
+            background: #1a1a1a;
+            color: #ffffff;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .call-container {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .call-header {
+            padding: 24px;
+            background: rgba(0, 0, 0, 0.3);
+            text-align: center;
+        }
+
+        .status-text {
+            font-size: 14px;
+            color: #9ca3af;
+            margin-bottom: 4px;
+        }
+
+        .call-duration {
+            font-size: 16px;
+            font-weight: 600;
+            color: #22c55e;
+        }
+
+        .call-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+        }
+
+        .profile-section {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .profile-picture {
+            width: 160px;
+            height: 160px;
+            border-radius: 50%;
+            border: 4px solid #e63946;
+            object-fit: cover;
+            margin-bottom: 24px;
+            box-shadow: 0 20px 60px rgba(230, 57, 70, 0.4);
+        }
+
+        .profile-picture.speaking {
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+                box-shadow: 0 20px 60px rgba(230, 57, 70, 0.4);
+            }
+            50% {
+                transform: scale(1.05);
+                box-shadow: 0 20px 80px rgba(230, 57, 70, 0.6);
+            }
+        }
+
+        .bot-name {
+            font-size: 28px;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 8px;
+        }
+
+        .bot-message {
+            font-size: 18px;
+            color: #d1d5db;
+            max-width: 600px;
+            line-height: 1.6;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .call-controls {
+            padding: 32px;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 24px;
+        }
+
+        .control-btn {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .control-btn:hover {
+            transform: translateY(-4px);
+        }
+
+        .control-btn i {
+            pointer-events: none;
+        }
+
+        .btn-end {
+            background: #ef4444;
+            color: #ffffff;
+        }
+
+        .btn-end:hover {
+            background: #dc2626;
+            box-shadow: 0 10px 30px rgba(239, 68, 68, 0.4);
+        }
+
+        .btn-mute {
+            background: #374151;
+            color: #ffffff;
+        }
+
+        .btn-mute.active {
+            background: #e63946;
+        }
+
+        .btn-mute.recording {
+            background: #ef4444;
+            animation: recordPulse 1s infinite;
+        }
+
+        @keyframes recordPulse {
+            0%, 100% {
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+            }
+            50% {
+                box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+            }
+        }
+
+        .btn-speaker {
+            background: #374151;
+            color: #ffffff;
+        }
+
+        .btn-speaker.active {
+            background: #22c55e;
+        }
+
+        .btn-chat {
+            background: #374151;
+            color: #ffffff;
+        }
+
+        .btn-chat.active {
+            background: #3b82f6;
+        }
+
+        .btn-language {
+            background: #374151;
+            color: #ffffff;
+        }
+
+        .chat-panel {
+            position: fixed;
+            right: -400px;
+            top: 0;
+            width: 400px;
+            height: 100vh;
+            background: #ffffff;
+            box-shadow: -4px 0 20px rgba(0, 0, 0, 0.3);
+            transition: right 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            z-index: 1000;
+        }
+
+        .chat-panel.active {
+            right: 0;
+        }
+
+        .chat-header {
+            padding: 20px;
+            background: #fafafa;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .chat-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 2px solid #e63946;
+        }
+
+        .chat-info {
+            flex: 1;
+        }
+
+        .chat-bot-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1a1a1a;
+        }
+
+        .chat-status {
+            font-size: 13px;
+            color: #22c55e;
+        }
+
+        .chat-close {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            background: #f3f4f6;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .chat-close:hover {
+            background: #e5e7eb;
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background: #fafafa;
+        }
+
+        .message {
+            margin-bottom: 16px;
+            display: flex;
+            gap: 12px;
+        }
+
+        .message.bot {
+            justify-content: flex-start;
+        }
+
+        .message.user {
+            justify-content: flex-end;
+        }
+
+        .message-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .message-content {
+            max-width: 70%;
+            padding: 12px 16px;
+            border-radius: 16px;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .message.bot .message-content {
+            background: #ffffff;
+            color: #1a1a1a;
+            border: 1px solid #e5e7eb;
+        }
+
+        .message.user .message-content {
+            background: #e63946;
+            color: #ffffff;
+        }
+
+        .message-time {
+            font-size: 11px;
+            color: #9ca3af;
+            margin-top: 4px;
+        }
+
+        .chat-input-area {
+            padding: 16px;
+            background: #ffffff;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .chat-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 14px;
+            font-family: inherit;
+            resize: none;
+        }
+
+        .chat-input:focus {
+            outline: none;
+            border-color: #e63946;
+            box-shadow: 0 0 0 4px rgba(230, 57, 70, 0.1);
+        }
+
+        .chat-send {
+            margin-top: 12px;
+            width: 100%;
+            padding: 12px;
+            background: #e63946;
+            color: #ffffff;
+            border: none;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .chat-send:hover {
+            background: #d62839;
+        }
+
+        .chat-send:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+
+        .language-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        .language-modal.active {
+            display: flex;
+        }
+
+        .language-content {
+            background: #ffffff;
+            border-radius: 20px;
+            padding: 32px;
+            width: 400px;
+            max-width: 90%;
+        }
+
+        .language-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1a1a1a;
+            margin-bottom: 24px;
+        }
+
+        .language-option {
+            padding: 16px;
+            background: #f9fafb;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .language-option:hover {
+            border-color: #e63946;
+            background: #fef2f2;
+        }
+
+        .language-option.selected {
+            border-color: #e63946;
+            background: #fef2f2;
+        }
+
+        .language-option i {
+            font-size: 24px;
+            color: #e63946;
+        }
+
+        .language-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1a1a1a;
+        }
+
+        .limit-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 3000;
+        }
+
+        .limit-modal.active {
+            display: flex;
+        }
+
+        .limit-content {
+            background: #ffffff;
+            border-radius: 20px;
+            padding: 40px;
+            width: 480px;
+            max-width: 90%;
+            text-align: center;
+        }
+
+        .limit-icon {
+            width: 80px;
+            height: 80px;
+            background: #fef2f2;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 24px;
+        }
+
+        .limit-icon i {
+            font-size: 40px;
+            color: #e63946;
+        }
+
+        .limit-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1a1a1a;
+            margin-bottom: 16px;
+        }
+
+        .limit-message {
+            font-size: 16px;
+            color: #6b7280;
+            margin-bottom: 32px;
+        }
+
+        .limit-btn {
+            padding: 14px 32px;
+            background: #e63946;
+            color: #ffffff;
+            border: none;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .limit-btn:hover {
+            background: #d62839;
+        }
+
+        .typing-indicator {
+            display: none;
+            align-items: center;
+            gap: 4px;
+            padding: 12px 16px;
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 16px;
+            width: fit-content;
+        }
+
+        .typing-indicator.active {
+            display: flex;
+        }
+
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            background: #9ca3af;
+            border-radius: 50%;
+            animation: typing 1.4s infinite;
+        }
+
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typing {
+            0%, 60%, 100% {
+                opacity: 0.3;
+                transform: translateY(0);
+            }
+            30% {
+                opacity: 1;
+                transform: translateY(-8px);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .chat-panel {
+                width: 100%;
+                right: -100%;
+            }
+            
+            .call-content {
+                padding: 20px;
+            }
+            
+            .profile-picture {
+                width: 120px;
+                height: 120px;
+            }
+            
+            .bot-message {
+                font-size: 16px;
+                padding: 15px;
+            }
+            
+            .language-content, .limit-content {
+                width: 90%;
+                padding: 20px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .control-btn {
+                width: 56px;
+                height: 56px;
+                font-size: 20px;
+            }
+            
+            .call-controls {
+                gap: 16px;
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="call-container">
+        <div class="call-header">
+            <div class="status-text">Connected</div>
+            <div class="call-duration" id="callDuration">00:00</div>
+        </div>
+
+        <div class="call-content">
+            <div class="profile-section">
+                <img src="/pics/logo.png" alt="QueuePilot" class="profile-picture" id="profilePicture">
+                <div class="bot-name">QueuePilot</div>
+            </div>
+            <div class="bot-message" id="botMessage">Initializing...</div>
+        </div>
+
+        <div class="call-controls">
+            <button class="control-btn btn-end" onclick="endCall()" title="End Call">
+                <i class="ri-phone-line"></i>
+            </button>
+            <button class="control-btn btn-mute" id="muteBtn" onclick="toggleMute()" title="Mute">
+                <i class="ri-mic-line"></i>
+            </button>
+            <button class="control-btn btn-speaker active" id="speakerBtn" onclick="toggleSpeaker()" title="Speaker">
+                <i class="ri-volume-up-line"></i>
+            </button>
+            <button class="control-btn btn-chat" id="chatBtn" onclick="toggleChat()" title="Chat">
+                <i class="ri-message-3-line"></i>
+            </button>
+            <button class="control-btn btn-language" onclick="openLanguageModal()" title="Language">
+                <i class="ri-translate"></i>
+            </button>
+        </div>
+    </div>
+
+    <div class="chat-panel" id="chatPanel">
+        <div class="chat-header">
+            <img src="/pics/logo.png" alt="QueuePilot" class="chat-avatar">
+            <div class="chat-info">
+                <div class="chat-bot-name">QueuePilot</div>
+                <div class="chat-status">Active</div>
+            </div>
+            <button class="chat-close" onclick="toggleChat()">
+                <i class="ri-close-line"></i>
+            </button>
+        </div>
+        <div class="chat-messages" id="chatMessages">
+            <div class="typing-indicator" id="typingIndicator">
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+            </div>
+        </div>
+        <div class="chat-input-area">
+            <textarea class="chat-input" id="chatInput" placeholder="Type your message..." rows="2"></textarea>
+            <button class="chat-send" id="sendBtn" onclick="sendMessage()">Send Message</button>
+        </div>
+    </div>
+
+    <div class="language-modal" id="languageModal">
+        <div class="language-content">
+            <div class="language-title">Select Language</div>
+            <div class="language-option selected" onclick="selectLanguage('en')">
+                <i class="ri-english-input"></i>
+                <div class="language-name">English</div>
+            </div>
+            <div class="language-option" onclick="selectLanguage('ne')">
+                <i class="ri-translate"></i>
+                <div class="language-name">नेपाली (Nepali)</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="limit-modal" id="limitModal">
+        <div class="limit-content">
+            <div class="limit-icon">
+                <i class="ri-error-warning-line"></i>
+            </div>
+            <div class="limit-title">Daily Token Limit Reached</div>
+            <div class="limit-message">Daily token limit reached. Please upgrade your plan or wait till tomorrow.</div>
+            <button class="limit-btn" onclick="closeLimitModal()">Understood</button>
+        </div>
+    </div>
+
+    <script>
+        let currentLanguage = 'en';
+        let speakerEnabled = true;
+        let conversationStep = 0;
+        let userData = {};
+        let callStartTime = Date.now();
+        let durationInterval;
+        let currentTokenId = null;
+        let currentAudio = null;
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let isRecording = false;
+
+        const messages = {
+            en: {
+                greeting: "Hello, I am QueuePilot. What type of token do you need for Blood Connect?",
+                chatGreeting: "Hello! Please type for what purpose you are making the token for.",
+                askName: "Please tell your name.",
+                askPhone: "Your name has been successfully registered. Please give your phone number for SMS purposes.",
+                success: "Your token has been successfully registered with token ID",
+                thankYou: "Thank you for using QueuePilot. Your call will now end."
+            },
+            ne: {
+                greeting: "नमस्ते, म QueuePilot हुँ। तपाईंलाई Blood Connect को लागि कस्तो प्रकारको टोकन चाहिन्छ?",
+                chatGreeting: "नमस्ते! कृपया टोकनको उद्देश्य टाइप गर्नुहोस्।",
+                askName: "कृपया आफ्नो नाम बताउनुहोस्।",
+                askPhone: "तपाईंको नाम सफलतापूर्वक दर्ता भयो। कृपया SMS को लागि आफ्नो फोन नम्बर दिनुहोस्।",
+                success: "तपाईंको टोकन सफलतापूर्वक दर्ता भयो, टोकन ID",
+                thankYou: "QueuePilot प्रयोग गर्नुभन्दो धन्यवाद। अब तपाईंको कल समाप्त हुनेछ।"
+            }
+        };
+
+        function updateCallDuration() {
+            const elapsed = Math.floor((Date.now() - callStartTime) / 1000);
+            const minutes = Math.floor(elapsed / 60);
+            const seconds = elapsed % 60;
+            document.getElementById('callDuration').textContent = 
+                `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        }
+
+        async function speak(text) {
+            if (!speakerEnabled) return;
+            
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudio = null;
+            }
+            
+            const profilePic = document.getElementById('profilePicture');
+            profilePic.classList.add('speaking');
+            
+            try {
+                const response = await fetch('/api/text-to-speech', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: text, language: currentLanguage })
+                });
+                
+                if (!response.ok) throw new Error('TTS request failed');
+                
+                const blob = await response.blob();
+                const audioUrl = URL.createObjectURL(blob);
+                currentAudio = new Audio(audioUrl);
+                
+                currentAudio.onended = () => {
+                    profilePic.classList.remove('speaking');
+                    URL.revokeObjectURL(audioUrl);
+                    currentAudio = null;
+                };
+                
+                currentAudio.onerror = () => {
+                    profilePic.classList.remove('speaking');
+                    URL.revokeObjectURL(audioUrl);
+                    currentAudio = null;
+                };
+                
+                await currentAudio.play();
+            } catch (error) {
+                console.error('TTS Error:', error);
+                profilePic.classList.remove('speaking');
+            }
+        }
+
+        function updateBotMessage(text) {
+            document.getElementById('botMessage').textContent = text;
+            speak(text);
+        }
+
+        function addChatMessage(text, isBot = true) {
+            const messagesContainer = document.getElementById('chatMessages');
+            const message = document.createElement('div');
+            message.className = `message ${isBot ? 'bot' : 'user'}`;
+            
+            const now = new Date();
+            const time = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+            
+            if (isBot) {
+                message.innerHTML = `
+                    <img src="/pics/logo.png" alt="Bot" class="message-avatar">
+                    <div>
+                        <div class="message-content">${text}</div>
+                        <div class="message-time">${time}</div>
+                    </div>
+                `;
+            } else {
+                message.innerHTML = `
+                    <div>
+                        <div class="message-content">${text}</div>
+                        <div class="message-time" style="text-align: right;">${time}</div>
+                    </div>
+                `;
+            }
+            
+            messagesContainer.appendChild(message);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            
+            if (isBot && speakerEnabled) {
+                speak(text);
+            }
+        }
+
+        function showTyping() {
+            document.getElementById('typingIndicator').classList.add('active');
+        }
+
+        function hideTyping() {
+            document.getElementById('typingIndicator').classList.remove('active');
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            
+            if (!message) return;
+            
+            addChatMessage(message, false);
+            input.value = '';
+            
+            showTyping();
+            
+            setTimeout(async () => {
+                hideTyping();
+                await processUserMessage(message);
+            }, 1500);
+        }
+
+        async function processUserMessage(message) {
+            const msg = messages[currentLanguage];
+            
+            if (conversationStep === 0) {
+                userData.purpose = message;
+                conversationStep = 1;
+                addChatMessage(msg.askName);
+            } else if (conversationStep === 1) {
+                userData.name = message;
+                conversationStep = 2;
+                addChatMessage(msg.askPhone);
+            } else if (conversationStep === 2) {
+                userData.phone = message;
+                conversationStep = 3;
+                
+                try {
+                    const limitResponse = await fetch('/api/check-limit');
+                    if (!limitResponse.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    const limitData = await limitResponse.json();
+                    
+                    if (limitData.limit_reached) {
+                        document.getElementById('limitModal').classList.add('active');
+                        return;
+                    }
+                    
+                    const response = await fetch('/api/create-token', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(userData)
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        currentTokenId = data.token_id;
+                        addChatMessage(`${msg.success} (${data.token_id}).`);
+                        
+                        setTimeout(() => {
+                            addChatMessage(msg.thankYou);
+                            setTimeout(() => {
+                                window.location.href = '/rating?token_id=' + encodeURIComponent(data.token_id);
+                            }, 3000);
+                        }, 2000);
+                    } else {
+                        addChatMessage('An error occurred: ' + (data.error || 'Unknown error'));
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    addChatMessage('Connection error. Please check if the server is running.');
+                }
+            }
+        }
+
+        function endCall() {
+            if (confirm('Are you sure you want to end the call?')) {
+                window.location.href = '/rating' + (currentTokenId ? '?token_id=' + encodeURIComponent(currentTokenId) : '');
+            }
+        }
+
+        function toggleMute() {
+            const btn = document.getElementById('muteBtn');
+            const icon = btn.querySelector('i');
+            
+            if (isRecording) {
+                stopRecording();
+            } else {
+                startRecording();
+            }
+        }
+
+        async function startRecording() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
+                
+                mediaRecorder.ondataavailable = (event) => {
+                    audioChunks.push(event.data);
+                };
+                
+                mediaRecorder.onstop = async () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                    await processVoiceInput(audioBlob);
+                    stream.getTracks().forEach(track => track.stop());
+                };
+                
+                mediaRecorder.start();
+                isRecording = true;
+                
+                const btn = document.getElementById('muteBtn');
+                const icon = btn.querySelector('i');
+                btn.classList.add('recording');
+                icon.className = 'ri-mic-fill';
+            } catch (error) {
+                console.error('Microphone error:', error);
+                alert('Could not access microphone. Please allow microphone access.');
+            }
+        }
+
+        function stopRecording() {
+            if (mediaRecorder && isRecording) {
+                mediaRecorder.stop();
+                isRecording = false;
+                
+                const btn = document.getElementById('muteBtn');
+                const icon = btn.querySelector('i');
+                btn.classList.remove('recording');
+                icon.className = 'ri-mic-line';
+            }
+        }
+
+        async function processVoiceInput(audioBlob) {
+            try {
+                showTyping();
+                
+                const formData = new FormData();
+                formData.append('audio', audioBlob, 'recording.webm');
+                formData.append('language', currentLanguage);
+                
+                const response = await fetch('/api/speech-to-text', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                hideTyping();
+                
+                if (!response.ok) {
+                    throw new Error('STT request failed');
+                }
+                
+                const data = await response.json();
+                
+                if (data.success && data.text) {
+                    const recognizedText = data.text.trim();
+                    addChatMessage(recognizedText, false);
+                    
+                    setTimeout(async () => {
+                        showTyping();
+                        setTimeout(async () => {
+                            hideTyping();
+                            await processUserMessage(recognizedText);
+                        }, 1500);
+                    }, 500);
+                } else {
+                    console.error('No text recognized');
+                    addChatMessage('Could not understand. Please try again.', true);
+                }
+            } catch (error) {
+                hideTyping();
+                console.error('Voice processing error:', error);
+                addChatMessage('Error processing voice. Please try again.', true);
+            }
+        }
+
+        function toggleSpeaker() {
+            speakerEnabled = !speakerEnabled;
+            const btn = document.getElementById('speakerBtn');
+            const icon = btn.querySelector('i');
+            
+            if (speakerEnabled) {
+                btn.classList.add('active');
+                icon.className = 'ri-volume-up-line';
+            } else {
+                btn.classList.remove('active');
+                icon.className = 'ri-volume-mute-line';
+                if (currentAudio) {
+                    currentAudio.pause();
+                    currentAudio = null;
+                }
+                document.getElementById('profilePicture').classList.remove('speaking');
+            }
+        }
+
+        function toggleChat() {
+            const panel = document.getElementById('chatPanel');
+            const btn = document.getElementById('chatBtn');
+            panel.classList.toggle('active');
+            btn.classList.toggle('active');
+            
+            if (panel.classList.contains('active') && conversationStep === 0) {
+                setTimeout(() => {
+                    addChatMessage(messages[currentLanguage].chatGreeting);
+                }, 500);
+            }
+        }
+
+        function openLanguageModal() {
+            document.getElementById('languageModal').classList.add('active');
+        }
+
+        function selectLanguage(lang) {
+            currentLanguage = lang;
+            document.getElementById('languageModal').classList.remove('active');
+            
+            document.querySelectorAll('.language-option').forEach(opt => {
+                opt.classList.remove('selected');
+            });
+            event.target.closest('.language-option').classList.add('selected');
+            
+            conversationStep = 0;
+            userData = {};
+            
+            updateBotMessage(messages[lang].greeting);
+            
+            const chatMessages = document.getElementById('chatMessages');
+            chatMessages.innerHTML = '<div class="typing-indicator" id="typingIndicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>';
+            addChatMessage(messages[lang].chatGreeting);
+        }
+
+        function closeLimitModal() {
+            document.getElementById('limitModal').classList.remove('active');
+            window.location.href = '/rating';
+        }
+
+        window.addEventListener('load', () => {
+            durationInterval = setInterval(updateCallDuration, 1000);
+            
+            setTimeout(() => {
+                updateBotMessage(messages[currentLanguage].greeting);
+            }, 1000);
+            
+            document.getElementById('chatInput').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+        });
+
+        window.addEventListener('beforeunload', () => {
+            clearInterval(durationInterval);
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudio = null;
+            }
+        });
+    </script>
+</body>
+</html>

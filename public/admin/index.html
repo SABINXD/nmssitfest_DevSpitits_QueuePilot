@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QueuePilot - Business Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif; background: #fafafa; color: #1a1a1a; overflow-x: hidden; }
+        
+        .token-counter-banner {
+            background: linear-gradient(135deg, #e63946 0%, #d62839 100%);
+            color: #ffffff;
+            padding: 16px 40px;
+            text-align: center;
+            font-size: 18px;
+            font-weight: 700;
+            box-shadow: 0 4px 12px rgba(230, 57, 70, 0.3);
+            position: sticky;
+            top: 0;
+            z-index: 999;
+        }
+        
+        .token-counter-banner .count {
+            font-size: 28px;
+            margin: 0 6px;
+        }
+        
+        .token-counter-banner .limit-warning {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            margin-left: 12px;
+        }
+        
+        .notification-toast { position: fixed; top: 24px; right: 24px; background: #ffffff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 16px 20px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15); z-index: 10001; display: none; align-items: center; gap: 12px; min-width: 320px; animation: slideIn 0.3s ease; }
+        .notification-toast.show { display: flex; }
+        .notification-toast.success { border-left: 4px solid #22c55e; }
+        .notification-toast.error { border-left: 4px solid #ef4444; }
+        @keyframes slideIn { from { transform: translateX(400px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        .notification-icon { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+        .notification-toast.success .notification-icon { background: #f0fdf4; color: #22c55e; }
+        .notification-toast.error .notification-icon { background: #fef2f2; color: #ef4444; }
+        .notification-content { flex: 1; }
+        .notification-title { font-weight: 600; color: #1a1a1a; margin-bottom: 2px; font-size: 14px; }
+        .notification-message { font-size: 13px; color: #6b7280; }
+        .notification-close { width: 24px; height: 24px; border-radius: 6px; background: #f9fafb; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+        .notification-close:hover { background: #e5e7eb; }
+        
+        .sidebar { position: fixed; left: 0; top: 0; width: 280px; height: 100vh; background: #ffffff; border-right: 1px solid #e5e7eb; z-index: 1000; display: flex; flex-direction: column; }
+        .sidebar-logo { padding: 32px 28px; border-bottom: 1px solid #e5e7eb; display: flex; align-items: center; gap: 12px; }
+        .sidebar-logo img { height: 40px; width: auto; }
+        .logo-text { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; }
+        .logo-queue { color: #1a1a1a; }
+        .logo-pilot { color: #e63946; }
+        .logo-dot { color: #1a1a1a; }
+        .sidebar-nav { padding: 24px 0; flex: 1; overflow-y: auto; }
+        .nav-item { padding: 14px 28px; display: flex; align-items: center; gap: 14px; color: #6b7280; cursor: pointer; transition: all 0.2s ease; font-size: 15px; font-weight: 500; position: relative; }
+        .nav-item::before { content: ''; position: absolute; left: 0; top: 0; height: 100%; width: 3px; background: #e63946; transform: scaleY(0); transition: transform 0.2s ease; }
+        .nav-item:hover { color: #1a1a1a; background: #fafafa; }
+        .nav-item.active { color: #e63946; background: #fef2f2; }
+        .nav-item.active::before { transform: scaleY(1); }
+        .nav-item i { font-size: 20px; }
+        
+        .main-content { margin-left: 280px; min-height: 100vh; }
+        .top-header { background: #ffffff; padding: 24px 40px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 56px; z-index: 100; }
+        .header-title h1 { font-size: 28px; font-weight: 700; color: #1a1a1a; margin-bottom: 4px; letter-spacing: -0.5px; }
+        .header-title p { color: #6b7280; font-size: 14px; }
+        
+        .content-container { padding: 40px; }
+        .content-section { display: none; }
+        .content-section.active { display: block; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; margin-bottom: 40px; }
+        .stat-card { background: #ffffff; border: 1px solid #e5e7eb; border-radius: 16px; padding: 28px; transition: all 0.3s ease; }
+        .stat-card:hover { transform: translateY(-4px); box-shadow: 0 12px 40px rgba(230, 57, 70, 0.12); border-color: #e63946; }
+        .stat-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
+        .stat-label { font-size: 14px; color: #6b7280; font-weight: 500; }
+        .stat-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+        .stat-icon.red { background: #fef2f2; color: #e63946; }
+        .stat-icon.blue { background: #eff6ff; color: #3b82f6; }
+        .stat-icon.green { background: #f0fdf4; color: #22c55e; }
+        .stat-icon.orange { background: #fff7ed; color: #f97316; }
+        .stat-value { font-size: 36px; font-weight: 700; color: #1a1a1a; margin-bottom: 8px; letter-spacing: -1px; }
+        .stat-change { font-size: 13px; display: flex; align-items: center; gap: 4px; color: #22c55e; }
+        
+        .table-card { background: #ffffff; border: 1px solid #e5e7eb; border-radius: 16px; padding: 32px; margin-bottom: 24px; }
+        .table-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px; }
+        .table-title { font-size: 20px; font-weight: 700; color: #1a1a1a; letter-spacing: -0.5px; }
+        .search-box { display: flex; align-items: center; gap: 12px; background: #f9fafb; padding: 10px 16px; border-radius: 10px; border: 1px solid #e5e7eb; }
+        .search-box input { border: none; background: none; outline: none; font-size: 14px; width: 280px; }
+        .data-table { width: 100%; border-collapse: collapse; }
+        .data-table thead { background: #f9fafb; border-radius: 12px; }
+        .data-table th { padding: 14px 16px; text-align: left; font-size: 13px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #e5e7eb; }
+        .data-table td { padding: 18px 16px; border-bottom: 1px solid #f3f4f6; font-size: 14px; color: #1a1a1a; }
+        .data-table tbody tr { transition: background 0.2s ease; }
+        .data-table tbody tr:hover { background: #fafafa; }
+        .status-badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+        .status-badge.waiting { background: #fff7ed; color: #f97316; }
+        .status-badge.completed { background: #f0fdf4; color: #22c55e; }
+        .action-btns { display: flex; gap: 8px; }
+        .btn-action { padding: 8px 14px; border: none; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; gap: 6px; }
+        .btn-send { background: #fef2f2; color: #e63946; }
+        .btn-send:hover { background: #e63946; color: #ffffff; }
+        .btn-reject { background: #f9fafb; color: #6b7280; }
+        .btn-reject:hover { background: #ef4444; color: #ffffff; }
+        
+        @media (max-width: 1024px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 768px) { .sidebar { transform: translateX(-100%); } .main-content { margin-left: 0; } .stats-grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="token-counter-banner" id="tokenBanner">
+        <span id="tokenCount">500</span><span class="count">/500</span> tokens left for today
+        <span class="limit-warning" id="limitWarning" style="display: none;">
+            <i class="ri-alert-line"></i> Limit Almost Reached
+        </span>
+    </div>
+
+    <div class="notification-toast" id="notificationToast">
+        <div class="notification-icon"><i class="ri-check-line"></i></div>
+        <div class="notification-content">
+            <div class="notification-title" id="notificationTitle">Success</div>
+            <div class="notification-message" id="notificationMessage">Operation completed successfully</div>
+        </div>
+        <button class="notification-close" onclick="closeNotification()"><i class="ri-close-line"></i></button>
+    </div>
+
+    <div class="sidebar">
+        <div class="sidebar-logo">
+            <img src="https://api.dicebear.com/7.x/shapes/svg?seed=QueuePilot" alt="Logo">
+            <div class="logo-text"><span class="logo-queue">Queue</span><span class="logo-pilot">Pilot</span><span class="logo-dot">.</span></div>
+        </div>
+        <nav class="sidebar-nav">
+            <div class="nav-item active" onclick="switchSection('dashboard')"><i class="ri-dashboard-line"></i><span>Dashboard</span></div>
+            <div class="nav-item" onclick="switchSection('records')"><i class="ri-file-list-3-line"></i><span>Records</span></div>
+        </nav>
+    </div>
+
+    <div class="main-content">
+        <div class="top-header">
+            <div class="header-title">
+                <h1>Welcome back, Admin!</h1>
+                <p id="currentDate">Friday, December 27, 2025</p>
+            </div>
+        </div>
+
+        <div class="content-container">
+            <div class="content-section active" id="section-dashboard">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <div class="stat-label">Total Customers</div>
+                            <div class="stat-icon red"><i class="ri-group-line"></i></div>
+                        </div>
+                        <div class="stat-value" id="totalCustomers">0</div>
+                        <div class="stat-change"><i class="ri-arrow-up-line"></i> Updated live</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <div class="stat-label">Today's Tokens</div>
+                            <div class="stat-icon blue"><i class="ri-ticket-2-line"></i></div>
+                        </div>
+                        <div class="stat-value" id="todayTokens">0</div>
+                        <div class="stat-change"><i class="ri-arrow-up-line"></i> Real-time</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <div class="stat-label">Waiting</div>
+                            <div class="stat-icon orange"><i class="ri-time-line"></i></div>
+                        </div>
+                        <div class="stat-value" id="waitingCount">0</div>
+                        <div class="stat-change"><i class="ri-information-line"></i> In queue</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <div class="stat-label">Completed</div>
+                            <div class="stat-icon green"><i class="ri-checkbox-circle-line"></i></div>
+                        </div>
+                        <div class="stat-value" id="completedCount">0</div>
+                        <div class="stat-change"><i class="ri-check-line"></i> All time</div>
+                    </div>
+                </div>
+                <div class="table-card">
+                    <div class="table-header"><div class="table-title">Recent Activity</div></div>
+                    <table class="data-table">
+                        <thead><tr><th>Token ID</th><th>Customer</th><th>Time</th><th>Status</th></tr></thead>
+                        <tbody id="recentActivityTable">
+                            <tr><td colspan="4" style="text-align: center; padding: 40px; color: #9ca3af;">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="content-section" id="section-records">
+                <div class="table-card">
+                    <div class="table-header">
+                        <div class="table-title">Customer Records</div>
+                        <div class="search-box"><i class="ri-search-line"></i><input type="text" id="searchInput" placeholder="Search records..." onkeyup="filterRecords()"></div>
+                    </div>
+                    <table class="data-table">
+                        <thead><tr><th>Token</th><th>Customer</th><th>Phone</th><th>Purpose</th><th>Status</th><th>Actions</th></tr></thead>
+                        <tbody id="recordsTableBody">
+                            <tr><td colspan="6" style="text-align: center; padding: 40px; color: #9ca3af;">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5000/api';
+        let updateInterval;
+        let allRecords = [];
+
+        function showNotification(title, message, type = 'success') {
+            const toast = document.getElementById('notificationToast');
+            const titleEl = document.getElementById('notificationTitle');
+            const messageEl = document.getElementById('notificationMessage');
+            const icon = toast.querySelector('.notification-icon i');
+            
+            toast.className = 'notification-toast show ' + type;
+            titleEl.textContent = title;
+            messageEl.textContent = message;
+            icon.className = type === 'success' ? 'ri-check-line' : 'ri-error-warning-line';
+            
+            setTimeout(() => toast.classList.remove('show'), 5000);
+        }
+
+        function closeNotification() {
+            document.getElementById('notificationToast').classList.remove('show');
+        }
+
+        async function loadTokens() {
+            try {
+                console.log('Fetching tokens from:', API_BASE + '/tokens');
+                const response = await fetch(API_BASE + '/tokens');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                console.log('Received data:', data);
+                
+                allRecords = data.tokens;
+                
+                const remaining = 500 - data.today_count;
+                document.getElementById('tokenCount').textContent = remaining;
+                
+                const limitWarning = document.getElementById('limitWarning');
+                if (remaining <= 50) {
+                    limitWarning.style.display = 'inline-block';
+                } else {
+                    limitWarning.style.display = 'none';
+                }
+                
+                document.getElementById('totalCustomers').textContent = data.tokens.length;
+                document.getElementById('todayTokens').textContent = data.today_count;
+                
+                const waiting = data.tokens.filter(t => t.status === 'waiting').length;
+                const completed = data.tokens.filter(t => t.status === 'completed').length;
+                document.getElementById('waitingCount').textContent = waiting;
+                document.getElementById('completedCount').textContent = completed;
+                
+                updateRecentActivity(data.tokens);
+                updateRecordsTable(data.tokens);
+                
+            } catch (error) {
+                console.error('Error loading tokens:', error);
+                showNotification('Connection Error', 'Failed to connect to server. Make sure Flask is running on port 5000.', 'error');
+            }
+        }
+
+        function updateRecentActivity(tokens) {
+            const tbody = document.getElementById('recentActivityTable');
+            
+            if (tokens.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 40px; color: #9ca3af;">No recent activity</td></tr>';
+                return;
+            }
+            
+            const recent = tokens.slice(0, 5);
+            tbody.innerHTML = recent.map(token => {
+                const date = new Date(token.created_at);
+                const time = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+                
+                return `
+                    <tr>
+                        <td><strong>${token.token_id}</strong></td>
+                        <td>${token.name}</td>
+                        <td>${time}</td>
+                        <td><span class="status-badge ${token.status}">
+                            <i class="ri-${token.status === 'waiting' ? 'time' : 'check'}-line"></i>
+                            ${token.status.charAt(0).toUpperCase() + token.status.slice(1)}
+                        </span></td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function updateRecordsTable(tokens) {
+            const tbody = document.getElementById('recordsTableBody');
+            
+            if (tokens.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 40px; color: #9ca3af;">No records found</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = tokens.map(token => `
+                <tr data-token="${token.token_id}">
+                    <td><strong>${token.token_id}</strong></td>
+                    <td>${token.name}</td>
+                    <td>${token.phone}</td>
+                    <td>${token.purpose}</td>
+                    <td><span class="status-badge ${token.status}">
+                        <i class="ri-${token.status === 'waiting' ? 'time' : 'check'}-line"></i>
+                        ${token.status.charAt(0).toUpperCase() + token.status.slice(1)}
+                    </span></td>
+                    <td>
+                        ${token.status === 'waiting' ? `
+                            <div class="action-btns">
+                                <button class="btn-action btn-send" onclick="sendSMS('${token.token_id}', '${token.phone}', this)">
+                                    <i class="ri-mail-send-line"></i> Send SMS
+                                </button>
+                                <button class="btn-action btn-reject" onclick="rejectCustomer('${token.token_id}', this)">
+                                    <i class="ri-close-circle-line"></i> Reject
+                                </button>
+                            </div>
+                        ` : '<span style="color: #9ca3af;">No actions</span>'}
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function filterRecords() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const filtered = allRecords.filter(token => 
+                token.token_id.toLowerCase().includes(searchTerm) ||
+                token.name.toLowerCase().includes(searchTerm) ||
+                token.phone.toLowerCase().includes(searchTerm) ||
+                token.purpose.toLowerCase().includes(searchTerm)
+            );
+            updateRecordsTable(filtered);
+        }
+
+        async function sendSMS(tokenId, phone, btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="ri-loader-4-line"></i> Sending...';
+            
+            try {
+                const response = await fetch(API_BASE + '/update-status', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token_id: tokenId, status: 'completed' })
+                });
+                
+                if (!response.ok) throw new Error('Failed to update status');
+                
+                setTimeout(() => {
+                    btn.innerHTML = '<i class="ri-check-line"></i> Sent';
+                    btn.style.background = '#22c55e';
+                    btn.style.color = '#ffffff';
+                    showNotification('SMS Sent', `SMS sent to ${phone}`);
+                    loadTokens();
+                }, 2000);
+            } catch (error) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="ri-mail-send-line"></i> Send SMS';
+                showNotification('Error', 'Failed to send SMS', 'error');
+            }
+        }
+
+        async function rejectCustomer(tokenId, btn) {
+            if (!confirm('Are you sure you want to reject this customer?')) return;
+            
+            const row = btn.closest('tr');
+            row.style.transition = 'all 0.3s ease';
+            row.style.opacity = '0';
+            row.style.transform = 'translateX(30px)';
+            
+            try {
+                const response = await fetch(API_BASE + '/update-status', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token_id: tokenId, status: 'rejected' })
+                });
+                
+                if (!response.ok) throw new Error('Failed to update status');
+                
+                setTimeout(() => {
+                    row.remove();
+                    showNotification('Customer Rejected', 'Customer removed from queue');
+                    loadTokens();
+                }, 300);
+            } catch (error) {
+                row.style.opacity = '1';
+                row.style.transform = 'translateX(0)';
+                showNotification('Error', 'Failed to reject customer', 'error');
+            }
+        }
+
+        function switchSection(section) {
+            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+            document.querySelectorAll('.content-section').forEach(sec => sec.classList.remove('active'));
+            event.target.closest('.nav-item').classList.add('active');
+            document.getElementById(`section-${section}`).classList.add('active');
+        }
+
+        window.addEventListener('load', () => {
+            console.log('Admin dashboard loaded');
+            loadTokens();
+            updateInterval = setInterval(loadTokens, 3000);
+            
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            document.getElementById('currentDate').textContent = new Date().toLocaleDateString('en-US', options);
+        });
+
+        window.addEventListener('beforeunload', () => {
+            if (updateInterval) clearInterval(updateInterval);
+        });
+    </script>
+</body>
+</html>
