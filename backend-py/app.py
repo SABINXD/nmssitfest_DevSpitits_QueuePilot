@@ -8,10 +8,10 @@ from dotenv import load_dotenv
 
 app = Flask(__name__, static_folder='public', template_folder='templates')
 CORS(app)
-load_dotenv()
-ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY")
-ELEVENLABS_VOICE_ID = os.getenv("ELEVENLABS_VOICE_ID")
-ELEVENLABS_STT_API_KEY = os.getenv("ELEVENLABS_STT_API_KEY")
+
+ELEVENLABS_API_KEY = "sk_7ecd40b7f7c23723e1759fb5f3c2cad12bd040d01cb9af30"
+ELEVENLABS_VOICE_ID = "pNInz6obpgDQGcFmaJgB"
+ELEVENLABS_STT_API_KEY = "sk_9821738e37b24eb01e96adab3bf8a4c3708f4ad1a1822629"
 
 DB_PATH = os.path.join(os.path.dirname(__file__), 'database', 'queuepilot.db')
 
